@@ -1,14 +1,3 @@
-"""
-Scorely – Python / Flask Backend
-Routes:
-  GET  /              → Serve homepage (index.html)
-  GET  /gpa           → GPA calculator page
-  GET  /reflect       → Reflection form page
-  POST /api/gpa       → Calculate GPA from JSON payload
-  POST /api/reflect   → Save reflection entry
-  GET  /api/entries   → Return all saved reflection entries
-"""
-
 from flask import Flask, render_template_string, request, jsonify, send_from_directory
 import os
 import json
