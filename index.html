@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scorely – Track. Reflect. Excel.</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #1a2747;
+      --blue:   #2d5be3;
+      --sky:    #5b8ef0;
+      --cream:  #f5f3ee;
+      --white:  #ffffff;
+      --slate:  #4a5568;
+      --light:  #eef2fb;
+      --accent: #f0c040;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--navy);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 6vw;
+      background: rgba(245,243,238,.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(45,91,227,.1);
+    }
+    .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem; letter-spacing: .03em;
+      color: var(--navy);
+    }
+    .logo span { color: var(--blue); }
+    nav ul { list-style: none; display: flex; gap: 2.4rem; }
+    nav ul a {
+      text-decoration: none; font-size: .92rem; font-weight: 500;
+      color: var(--slate); transition: color .2s;
+    }
+    nav ul a:hover { color: var(--blue); }
+    .nav-cta {
+      background: var(--blue); color: var(--white) !important;
+      padding: .48rem 1.2rem; border-radius: 6px;
+      transition: background .2s !important;
+    }
+    .nav-cta:hover { background: var(--navy) !important; color: var(--white) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 3rem;
+      padding: 7rem 6vw 5rem;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .hero-text h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.6rem, 4.5vw, 4rem);
+      line-height: 1.12;
+      color: var(--navy);
+    }
+    .hero-text h1 em { font-style: italic; color: var(--blue); }
+    .hero-text p {
+      margin-top: 1.2rem;
+      font-size: 1.08rem; line-height: 1.7;
+      color: var(--slate); max-width: 42ch;
+    }
+    .hero-btns { margin-top: 2.2rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-block; padding: .78rem 2rem;
+      background: var(--blue); color: var(--white);
+      border-radius: 8px; text-decoration: none;
+      font-weight: 600; font-size: .96rem;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: var(--navy); transform: translateY(-2px); }
+    .btn-ghost {
+      display: inline-block; padding: .78rem 2rem;
+      border: 2px solid var(--blue); color: var(--blue);
+      border-radius: 8px; text-decoration: none;
+      font-weight: 600; font-size: .96rem;
+      transition: background .2s, color .2s, transform .15s;
+    }
+    .btn-ghost:hover { background: var(--blue); color: var(--white); transform: translateY(-2px); }
+
+    .hero-image {
+      position: relative;
+    }
+    .hero-image img {
+      width: 100%; border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(26,39,71,.18);
+      object-fit: cover; aspect-ratio: 4/3;
+    }
+    .hero-badge {
+      position: absolute; bottom: -1.4rem; left: -1.4rem;
+      background: var(--white); border-radius: 14px;
+      padding: 1rem 1.4rem;
+      box-shadow: 0 8px 28px rgba(45,91,227,.18);
+      display: flex; align-items: center; gap: .8rem;
+    }
+    .hero-badge .big { font-size: 1.9rem; font-weight: 700; color: var(--blue); }
+    .hero-badge .label { font-size: .78rem; line-height: 1.4; color: var(--slate); }
+
+    /* ── HOW WE HELP ── */
+    .how {
+      background: var(--white);
+      padding: 5rem 6vw;
+    }
+    .how-inner { max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-size: .78rem; font-weight: 600; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--blue);
+      margin-bottom: .6rem;
+    }
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      color: var(--navy); margin-bottom: 1rem;
+    }
+    .how-lead {
+      font-size: 1rem; line-height: 1.75;
+      color: var(--slate); max-width: 72ch;
+      margin-bottom: 3rem;
+    }
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.6rem;
+    }
+    .card {
+      background: var(--light); border-radius: 16px;
+      padding: 2rem 1.8rem; transition: transform .2s, box-shadow .2s;
+      border: 1px solid rgba(45,91,227,.08);
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(45,91,227,.12); }
+    .card-icon {
+      width: 54px; height: 54px; border-radius: 14px;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.2rem;
+    }
+    .card-icon svg { width: 28px; height: 28px; fill: var(--white); }
+    .card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: .6rem; }
+    .card p { font-size: .9rem; line-height: 1.65; color: var(--slate); }
+
+    /* ── FEATURES STRIP ── */
+    .features {
+      padding: 5rem 6vw;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .features-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 4rem;
+    }
+    .features-grid img {
+      width: 100%; border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(26,39,71,.14);
+      object-fit: cover; aspect-ratio: 1;
+    }
+    .feature-list { list-style: none; margin-top: 1.6rem; }
+    .feature-list li {
+      display: flex; gap: .9rem; align-items: flex-start;
+      margin-bottom: 1.4rem;
+    }
+    .feature-list .dot {
+      flex-shrink: 0;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      margin-top: .15rem;
+    }
+    .feature-list .dot svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.5; }
+    .feature-list strong { display: block; font-weight: 600; margin-bottom: .2rem; }
+    .feature-list span { font-size: .9rem; color: var(--slate); line-height: 1.6; }
+
+    /* ── CTA BAND ── */
+    .cta-band {
+      background: var(--navy);
+      padding: 4.5rem 6vw;
+      text-align: center;
+    }
+    .cta-band h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      color: var(--white); margin-bottom: 1rem;
+    }
+    .cta-band p {
+      color: rgba(255,255,255,.68);
+      font-size: 1rem; line-height: 1.7;
+      max-width: 50ch; margin: 0 auto 2rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding: 2rem 6vw;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    footer .logo { color: var(--white); font-size: 1.2rem; }
+    footer p { font-size: .82rem; color: rgba(255,255,255,.42); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .65s ease both; }
+    .delay-1 { animation-delay: .12s; }
+    .delay-2 { animation-delay: .24s; }
+    .delay-3 { animation-delay: .36s; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero, .features-grid { grid-template-columns: 1fr; }
+      .hero-image { order: -1; }
+      .hero-badge { left: .5rem; bottom: .5rem; }
+      nav ul { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Score<span>ly</span></div>
+  <ul>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="/reflect">Reflection Form</a></li>
+    <li><a href="/gpa" class="nav-cta">GPA Calculator</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-text fade-up">
+    <h1>Take control of your <em>academic</em> performance</h1>
+    <p>Scorely helps students track grades, calculate their GPA, and reflect on assessments — all in one place. Make smarter decisions and build better study habits.</p>
+    <div class="hero-btns">
+      <a href="/reflect" class="btn-primary">Start Reflecting</a>
+      <a href="/gpa" class="btn-ghost">Calculate GPA</a>
+    </div>
+  </div>
+  <div class="hero-image fade-up delay-2">
+    <img src="https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&q=80" alt="Student studying" />
+    <div class="hero-badge">
+      <div class="big">3.8</div>
+      <div class="label">Average GPA<br>tracked by students</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW WE HELP -->
+<section class="how" id="how">
+  <div class="how-inner">
+    <p class="section-label fade-up">What we offer</p>
+    <h2 class="section-title fade-up delay-1">How we can help</h2>
+    <p class="how-lead fade-up delay-2">Track your grades, calculate your GPA, and reflect on your progress — all in one place. Our tools keep you organised, help you understand your performance, and guide smarter decisions to improve your results.</p>
+    <div class="cards">
+      <div class="card fade-up">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <h3>Reflection Assessment Form</h3>
+        <p>Reflect on your completed assessments to better understand your performance, identify areas for improvement, and develop strategies to enhance your results.</p>
+      </div>
+      <div class="card fade-up delay-1">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        </div>
+        <h3>Calculate your GPA</h3>
+        <p>Quickly find out your GPA with just a few inputs. Add your subjects and scores and we do the calculations — so you can focus on improving your results and reaching your goals.</p>
+      </div>
+      <div class="card fade-up delay-2">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <h3>Track Progress Over Time</h3>
+        <p>See how your grades evolve across terms and subjects. Identify trends, celebrate wins, and spot where you need to put in extra effort before it's too late.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="features-grid">
+    <div>
+      <p class="section-label">Built for students</p>
+      <h2 class="section-title">Everything in one place</h2>
+      <ul class="feature-list">
+        <li>
+          <div class="dot"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div><strong>Automatic GPA Calculation</strong><span>Enter subject scores and Scorely instantly computes your estimated GPA and weighted averages.</span></div>
+        </li>
+        <li>
+          <div class="dot"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div><strong>Guided Reflection Prompts</strong><span>Structured questions help you move beyond "I did badly" to real insights about what to change.</span></div>
+        </li>
+        <li>
+          <div class="dot"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div><strong>Multi-subject Dashboard</strong><span>All your subjects and scores in a single view. No spreadsheets, no confusion.</span></div>
+        </li>
+        <li>
+          <div class="dot"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div><strong>Progress Reports</strong><span>Download a summary of your academic journey to share with tutors, parents, or advisors.</span></div>
+        </li>
+      </ul>
+    </div>
+    <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80" alt="Student at desk" />
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<section class="cta-band">
+  <h2>Ready to take control of your grades?</h2>
+  <p>Join thousands of students who use Scorely to track their performance and reflect with purpose.</p>
+  <a href="/reflect" class="btn-primary">Get Started — it's free</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">Score<span style="color:var(--sky)">ly</span></div>
+  <p>© 2025 Scorely. Built for students, by students.</p>
+  <p><a href="/contact" style="color:rgba(255,255,255,.42);text-decoration:none;">Contact</a></p>
+</footer>
+
+</body>
+</html>
