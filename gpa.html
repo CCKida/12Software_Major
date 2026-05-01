@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scorely – GPA Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #1a2747;
+      --blue:   #2d5be3;
+      --sky:    #5b8ef0;
+      --cream:  #f5f3ee;
+      --white:  #ffffff;
+      --slate:  #4a5568;
+      --light:  #eef2fb;
+      --border: #dce4f5;
+      --green:  #22c55e;
+      --amber:  #f59e0b;
+      --red:    #ef4444;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--navy); min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 6vw;
+      background: rgba(245,243,238,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(45,91,227,.1);
+    }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--navy); text-decoration: none; }
+    .logo span { color: var(--blue); }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav ul a { text-decoration: none; font-size: .9rem; font-weight: 500; color: var(--slate); transition: color .2s; }
+    nav ul a:hover { color: var(--blue); }
+    nav ul a.active { color: var(--blue); font-weight: 600; }
+    .nav-cta { background: var(--blue); color: var(--white) !important; padding: .45rem 1.1rem; border-radius: 6px; }
+    .nav-cta:hover { background: var(--navy) !important; }
+
+    /* PAGE HEADER */
+    .page-header {
+      background: linear-gradient(135deg, #1a2747 0%, #2d3f7a 100%);
+      padding: 4rem 6vw 3rem;
+      position: relative; overflow: hidden;
+    }
+    .page-header::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 280px; height: 280px; border-radius: 50%;
+      background: rgba(45,91,227,.2);
+    }
+    .page-header::after {
+      content: ''; position: absolute; bottom: -50px; left: 20%;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: rgba(91,142,240,.1);
+    }
+    .header-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+    .breadcrumb { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+    .breadcrumb a { color: rgba(255,255,255,.5); text-decoration: none; font-size: .82rem; }
+    .breadcrumb a:hover { color: rgba(255,255,255,.85); }
+    .breadcrumb span { color: rgba(255,255,255,.3); font-size: .82rem; }
+    .breadcrumb .cur { color: rgba(255,255,255,.8); font-size: .82rem; }
+    .page-header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); }
+    .page-header p { margin-top: .7rem; color: rgba(255,255,255,.65); font-size: 1rem; line-height: 1.65; max-width: 54ch; }
+
+    /* LAYOUT */
+    .main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 6vw 5rem; display: grid; grid-template-columns: 1fr 360px; gap: 1.8rem; align-items: start; }
+
+    /* CARD BASE */
+    .card { background: var(--white); border-radius: 18px; border: 1px solid var(--border); padding: 2rem 2.2rem; }
+    .card-title { font-family: 'DM Serif Display', serif; font-size: 1.25rem; margin-bottom: 1.4rem; }
+
+    /* GPA MODE TABS */
+    .mode-tabs { display: flex; gap: .5rem; margin-bottom: 1.6rem; }
+    .mode-tab {
+      flex: 1; padding: .6rem; border-radius: 9px;
+      border: 1.5px solid var(--border); background: var(--cream);
+      font-family: 'DM Sans', sans-serif; font-size: .85rem; font-weight: 500;
+      cursor: pointer; color: var(--slate); transition: all .2s; text-align: center;
+    }
+    .mode-tab.active { background: var(--blue); border-color: var(--blue); color: var(--white); font-weight: 600; }
+
+    /* SUBJECT TABLE */
+    .table-header { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 40px; gap: .6rem; padding: 0 .4rem .6rem; border-bottom: 1.5px solid var(--border); margin-bottom: .6rem; }
+    .table-header span { font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--slate); }
+
+    .subject-row { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 40px; gap: .6rem; margin-bottom: .55rem; align-items: center; animation: slideIn .25s ease; }
+    @keyframes slideIn { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
+
+    .subject-row input, .subject-row select {
+      width: 100%; padding: .6rem .75rem;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: .88rem;
+      background: var(--cream); color: var(--navy);
+      outline: none; transition: border-color .2s, background .2s;
+    }
+    .subject-row input:focus, .subject-row select:focus {
+      border-color: var(--blue); background: var(--white);
+      box-shadow: 0 0 0 2px rgba(45,91,227,.09);
+    }
+    .subject-row select.name-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .7rem center;
+      padding-right: 2rem;
+      cursor: pointer;
+    }
+
+    .btn-del {
+      width: 32px; height: 32px; border-radius: 7px;
+      background: none; border: 1.5px solid var(--border);
+      color: var(--slate); cursor: pointer; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s; flex-shrink: 0;
+    }
+    .btn-del:hover { background: #fff1f1; border-color: var(--red); color: var(--red); }
+
+    .btn-add {
+      display: flex; align-items: center; gap: .5rem;
+      background: none; border: 1.5px dashed var(--border);
+      border-radius: 9px; padding: .65rem 1.1rem;
+      font-family: 'DM Sans', sans-serif; font-size: .88rem;
+      color: var(--slate); cursor: pointer; width: 100%;
+      transition: all .2s; margin-top: .4rem;
+    }
+    .btn-add:hover { border-color: var(--blue); color: var(--blue); background: var(--light); }
+
+    .calc-row { display: flex; gap: .8rem; margin-top: 1.4rem; }
+    .btn-calc {
+      flex: 1; padding: .85rem;
+      background: var(--blue); color: var(--white);
+      border: none; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: .96rem; font-weight: 600;
+      cursor: pointer; transition: background .2s, transform .15s;
+    }
+    .btn-calc:hover { background: var(--navy); transform: translateY(-2px); }
+    .btn-clear {
+      padding: .85rem 1.3rem;
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: .9rem; color: var(--slate); cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-clear:hover { border-color: var(--slate); color: var(--navy); }
+
+    /* GRADE REFERENCE */
+    .grade-ref { margin-top: 1.4rem; }
+    .grade-ref summary {
+      font-size: .84rem; font-weight: 600; color: var(--blue);
+      cursor: pointer; user-select: none; list-style: none;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .grade-ref summary::before { content: '▸'; transition: transform .2s; }
+    .grade-ref[open] summary::before { transform: rotate(90deg); }
+    .grade-table { margin-top: .8rem; width: 100%; border-collapse: collapse; }
+    .grade-table th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--slate); font-weight: 600; padding: .4rem .6rem; text-align: left; border-bottom: 1.5px solid var(--border); }
+    .grade-table td { font-size: .82rem; padding: .38rem .6rem; border-bottom: 1px solid var(--border); color: var(--slate); }
+    .grade-table tr:last-child td { border-bottom: none; }
+    .grade-pill { display: inline-block; padding: .15rem .55rem; border-radius: 5px; font-weight: 600; font-size: .78rem; background: var(--light); color: var(--blue); }
+
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 1.4rem; }
+
+    /* GPA DIAL */
+    .dial-card { text-align: center; }
+    .dial-wrap { position: relative; width: 160px; height: 160px; margin: 1rem auto; }
+    .dial-svg { width: 160px; height: 160px; transform: rotate(-90deg); }
+    .dial-bg { fill: none; stroke: var(--light); stroke-width: 14; }
+    .dial-arc { fill: none; stroke: var(--blue); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 408; transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .5s; }
+    .dial-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .dial-gpa { font-family: 'DM Serif Display', serif; font-size: 2.3rem; color: var(--navy); line-height: 1; }
+    .dial-label { font-size: .72rem; color: var(--slate); font-weight: 500; margin-top: .2rem; }
+    .dial-class { font-size: .9rem; font-weight: 600; margin-top: .3rem; }
+
+    /* SUBJECT BREAKDOWN */
+    .breakdown-list { list-style: none; margin-top: .3rem; }
+    .breakdown-item {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .6rem 0; border-bottom: 1px solid var(--border);
+    }
+    .breakdown-item:last-child { border-bottom: none; }
+    .breakdown-bar-wrap { flex: 1; }
+    .breakdown-name { font-size: .85rem; font-weight: 500; margin-bottom: .25rem; }
+    .breakdown-bar-bg { background: var(--light); border-radius: 4px; height: 6px; overflow: hidden; }
+    .breakdown-bar { height: 6px; border-radius: 4px; background: var(--blue); transition: width .8s cubic-bezier(.4,0,.2,1); width: 0; }
+    .breakdown-score { font-size: .82rem; font-weight: 600; color: var(--navy); min-width: 36px; text-align: right; }
+    .breakdown-grade { font-size: .78rem; font-weight: 600; padding: .1rem .45rem; border-radius: 5px; background: var(--light); color: var(--blue); min-width: 32px; text-align: center; }
+
+    /* STATS STRIP */
+    .stats-strip { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+    .stat-box { background: var(--light); border-radius: 10px; padding: .85rem 1rem; }
+    .stat-val { font-size: 1.3rem; font-weight: 700; color: var(--blue); }
+    .stat-lbl { font-size: .74rem; color: var(--slate); margin-top: .1rem; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 1.6rem 0; color: var(--slate); font-size: .88rem; }
+    .empty-state svg { width: 44px; height: 44px; stroke: var(--border); fill: none; stroke-width: 1.5; margin-bottom: .6rem; }
+
+    /* INFO HINT */
+    .info-hint { display: flex; gap: .6rem; align-items: flex-start; background: var(--light); border-radius: 10px; padding: .8rem 1rem; font-size: .82rem; color: var(--slate); line-height: 1.55; margin-top: 1rem; }
+    .info-hint svg { width: 16px; height: 16px; stroke: var(--blue); fill: none; stroke-width: 2; flex-shrink: 0; margin-top: .1rem; }
+
+    @media (max-width: 860px) {
+      .main { grid-template-columns: 1fr; }
+      .table-header, .subject-row { grid-template-columns: 2fr 1fr 1fr 36px; }
+      .col-units { display: none; }
+      nav ul { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Score<span>ly</span></a>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="reflect.html">Reflection</a></li>
+    <li><a href="gpa.html" class="active nav-cta">GPA Calculator</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="header-inner">
+    <div class="breadcrumb">
+      <a href="index.html">Home</a>
+      <span>›</span>
+      <span class="cur">GPA Calculator</span>
+    </div>
+    <h1>GPA Calculator</h1>
+    <p>Add your subjects and scores — Scorely will instantly calculate your GPA, weighted average, and grade breakdown.</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: INPUT -->
+  <div>
+    <div class="card" style="animation: fadeUp .45s ease both;">
+      <h2 class="card-title">📚 Your Subjects</h2>
+
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="setMode('percent', this)">% Score</button>
+        <button class="mode-tab" onclick="setMode('letter', this)">Grade (A–E)</button>
+        <button class="mode-tab" onclick="setMode('points', this)">Points (e.g. 75/100)</button>
+      </div>
+
+      <div class="table-header">
+        <span>Subject</span>
+        <span id="colScoreLabel">Score (%)</span>
+        <span>Grade</span>
+        <span class="col-units">Units</span>
+        <span></span>
+      </div>
+
+      <div id="subjectList"></div>
+
+      <button class="btn-add" onclick="addRow()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add subject
+      </button>
+
+      <div class="calc-row">
+        <button class="btn-calc" onclick="calculate()">Calculate GPA</button>
+        <button class="btn-clear" onclick="clearAll()">Clear all</button>
+      </div>
+
+      <details class="grade-ref">
+        <summary>Australian Grade Reference (NSW)</summary>
+        <table class="grade-table">
+          <thead><tr><th>Score (%)</th><th>Grade</th><th>Grade Points</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>85–100</td><td><span class="grade-pill" style="background:#dcfce7;color:#16a34a;">A</span></td><td>4.0</td><td>Outstanding — extensive knowledge &amp; skills</td></tr>
+            <tr><td>70–84</td><td><span class="grade-pill" style="background:#dbeafe;color:#1d4ed8;">B</span></td><td>3.0</td><td>High — thorough knowledge &amp; skills</td></tr>
+            <tr><td>55–69</td><td><span class="grade-pill" style="background:#fef3c7;color:#b45309;">C</span></td><td>2.0</td><td>Sound — adequate knowledge &amp; skills</td></tr>
+            <tr><td>40–54</td><td><span class="grade-pill" style="background:#fee2e2;color:#dc2626;">D</span></td><td>1.0</td><td>Basic — elementary knowledge &amp; skills</td></tr>
+            <tr><td>0–39</td><td><span class="grade-pill" style="background:#f3f4f6;color:#6b7280;">E</span></td><td>0.0</td><td>Limited — difficulty demonstrating skills</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:.74rem;color:var(--slate);margin-top:.6rem;line-height:1.5;">Based on the NSW Education Standards Authority (NESA) Performance Band descriptors for Stage 5 &amp; Stage 6.</p>
+      </details>
+
+      <div class="info-hint">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        Units (credit hours) let you weight subjects differently. Leave blank to treat all subjects equally.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: RESULTS SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- GPA DIAL -->
+    <div class="card dial-card" id="dialCard">
+      <div class="empty-state" id="dialEmpty">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <p>Add subjects and hit <strong>Calculate GPA</strong> to see your result</p>
+      </div>
+      <div id="dialResult" style="display:none;">
+        <div class="dial-wrap">
+          <svg class="dial-svg" viewBox="0 0 160 160">
+            <circle class="dial-bg" cx="80" cy="80" r="65"/>
+            <circle class="dial-arc" id="dialArc" cx="80" cy="80" r="65"/>
+          </svg>
+          <div class="dial-center">
+            <div class="dial-gpa" id="dialGpa">–</div>
+            <div class="dial-label">GPA</div>
+          </div>
+        </div>
+        <div class="dial-class" id="dialClass"></div>
+        <div style="font-size:.8rem;color:var(--slate);margin-top:.3rem;" id="dialSub"></div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="card" id="statsCard" style="display:none;">
+      <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Quick Stats</h3>
+      <div class="stats-strip" id="statsStrip"></div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="card" id="breakdownCard" style="display:none;">
+      <h3 style="font-size:1rem;font-weight:600;margin-bottom:.8rem;">Subject Breakdown</h3>
+      <ul class="breakdown-list" id="breakdownList"></ul>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Australian school grade scale (NSW HSC / ATAR aligned)
+  const GRADE_POINTS = {
+    'A':4.0, 'B':3.0, 'C':2.0, 'D':1.0, 'E':0.0
+  };
+  const GRADE_COLORS = {
+    'A':'#22c55e', 'B':'#3b82f6', 'C':'#f59e0b', 'D':'#ef4444', 'E':'#6b7280'
+  };
+
+  const SUBJECTS = [
+    '— Select subject —',
+    'Mathematics', 'Science', 'English',
+    'History', 'Ancient History', 'Modern History',
+    'Geography', 'Economics', 'Business Studies', 'Legal Studies',
+    'Language', 'PDHPE',
+    'Dance', 'Art', 'Music', 'Drama',
+    'Software Design & Development', 'Multimedia Technology',
+    'Wood Technology', 'Food Technology', 'Textiles',
+    'Physics', 'Chemistry', 'Biology',
+    'Legal', 'VET Course',
+  ];
+
+  let mode = 'percent';
+  let rowCount = 0;
+
+  function subjectOptions(selected='') {
+    return SUBJECTS.map(s =>
+      `<option value="${s === '— Select subject —' ? '' : s}" ${s === selected ? 'selected' : ''}>${s}</option>`
+    ).join('');
+  }
+
+  function setMode(m, btn) {
+    mode = m;
+    document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const label = {percent:'Score (%)', letter:'Grade (A–E)', points:'Points (scored/max)'};
+    document.getElementById('colScoreLabel').textContent = label[m];
+    document.querySelectorAll('.score-input').forEach(el => {
+      el.placeholder = m === 'percent' ? 'e.g. 84' : m === 'letter' ? 'e.g. B' : 'e.g. 75/100';
+    });
+  }
+
+  // Australian A–E grading (NSW syllabus standard)
+  function scoreToGrade(s) {
+    if (s >= 85) return 'A';
+    if (s >= 70) return 'B';
+    if (s >= 55) return 'C';
+    if (s >= 40) return 'D';
+    return 'E';
+  }
+
+  function classify(gpa) {
+    if (gpa >= 3.5) return { label: '🏆 Outstanding (A)', color: '#22c55e' };
+    if (gpa >= 2.5) return { label: '⭐ High (B)',         color: '#3b82f6' };
+    if (gpa >= 1.5) return { label: '✅ Sound (C)',        color: '#f59e0b' };
+    if (gpa >= 0.5) return { label: '📘 Basic (D)',        color: '#ef4444' };
+    return { label: '⚠️ Limited (E)', color: '#6b7280' };
+  }
+
+  function addRow(name='', score='', units='') {
+    rowCount++;
+    const id = rowCount;
+    const div = document.createElement('div');
+    div.className = 'subject-row';
+    div.id = 'row-' + id;
+
+    const placeholders = { percent:'e.g. 84', letter:'e.g. B+', points:'e.g. 75/100' };
+
+    div.innerHTML = `
+      <select class="name-input"><option value="">— Select subject —</option>${subjectOptions(name)}</select>
+      <input type="text" placeholder="${placeholders[mode]}" value="${score}" class="score-input"/>
+      <input type="text" placeholder="Auto" class="grade-preview" readonly style="background:var(--light);color:var(--blue);font-weight:600;cursor:default;"/>
+      <input type="number" placeholder="1" min="0.1" step="0.5" value="${units}" class="col-units units-input"/>
+      <button class="btn-del" onclick="removeRow(${id})" title="Remove">✕</button>
+    `;
+    document.getElementById('subjectList').appendChild(div);
+
+    // Live grade preview
+    div.querySelector('.score-input').addEventListener('input', function() {
+      const preview = div.querySelector('.grade-preview');
+      const val = this.value.trim();
+      if (mode === 'letter') {
+        const g = val.toUpperCase();
+        preview.value = GRADE_POINTS[g] !== undefined ? g : '';
+      } else if (mode === 'percent') {
+        const n = parseFloat(val);
+        preview.value = !isNaN(n) && n >= 0 && n <= 100 ? scoreToGrade(n) : '';
+      } else if (mode === 'points') {
+        const parts = val.split('/');
+        if (parts.length === 2) {
+          const pct = (parseFloat(parts[0]) / parseFloat(parts[1])) * 100;
+          preview.value = !isNaN(pct) ? scoreToGrade(pct) : '';
+        }
+      }
+    });
+  }
+
+  function removeRow(id) {
+    const el = document.getElementById('row-' + id);
+    if (el) el.remove();
+  }
+
+  function clearAll() {
+    document.getElementById('subjectList').innerHTML = '';
+    rowCount = 0;
+    hideResults();
+    addRow(); addRow(); addRow();
+  }
+
+  function hideResults() {
+    document.getElementById('dialEmpty').style.display = '';
+    document.getElementById('dialResult').style.display = 'none';
+    document.getElementById('statsCard').style.display = 'none';
+    document.getElementById('breakdownCard').style.display = 'none';
+  }
+
+  function parseScore(val) {
+    val = val.trim();
+    if (mode === 'letter') {
+      const g = val.toUpperCase();
+      return GRADE_POINTS[g] !== undefined ? { pct: null, grade: g, points: GRADE_POINTS[g] } : null;
+    } else if (mode === 'percent') {
+      const n = parseFloat(val);
+      if (isNaN(n) || n < 0 || n > 100) return null;
+      const g = scoreToGrade(n);
+      return { pct: n, grade: g, points: GRADE_POINTS[g] };
+    } else {
+      const parts = val.split('/');
+      if (parts.length !== 2) return null;
+      const pct = (parseFloat(parts[0]) / parseFloat(parts[1])) * 100;
+      if (isNaN(pct)) return null;
+      const g = scoreToGrade(pct);
+      return { pct, grade: g, points: GRADE_POINTS[g] };
+    }
+  }
+
+  function calculate() {
+    const rows = document.querySelectorAll('.subject-row');
+    if (!rows.length) return;
+
+    let subjects = [];
+    let valid = true;
+
+    rows.forEach(row => {
+      const nameEl  = row.querySelector('.name-input');
+      const scoreEl = row.querySelector('.score-input');
+      const unitsEl = row.querySelector('.units-input');
+
+      const name  = nameEl.value.trim() || 'Unnamed';
+      const scoreVal = scoreEl.value.trim();
+      const units = parseFloat(unitsEl.value) || 1;
+
+      if (!scoreVal) { scoreEl.classList.add('error'); valid = false; return; }
+      scoreEl.classList.remove('error');
+
+      const parsed = parseScore(scoreVal);
+      if (!parsed) { scoreEl.classList.add('error'); valid = false; return; }
+      scoreEl.classList.remove('error');
+
+      subjects.push({ name, ...parsed, units });
+    });
+
+    if (!valid || !subjects.length) return;
+
+    // Calculate weighted GPA
+    let totalPoints = 0, totalUnits = 0;
+    subjects.forEach(s => { totalPoints += s.points * s.units; totalUnits += s.units; });
+    const gpa = totalPoints / totalUnits;
+
+    // Calculate weighted average % (where available)
+    const scoredSubjs = subjects.filter(s => s.pct !== null);
+    let avgPct = null;
+    if (scoredSubjs.length) {
+      const wSum = scoredSubjs.reduce((a, s) => a + s.pct * s.units, 0);
+      const wUnits = scoredSubjs.reduce((a, s) => a + s.units, 0);
+      avgPct = wSum / wUnits;
+    }
+
+    const cls = classify(gpa);
+
+    // Update dial
+    document.getElementById('dialEmpty').style.display = 'none';
+    document.getElementById('dialResult').style.display = 'block';
+    document.getElementById('dialGpa').textContent = gpa.toFixed(2);
+    document.getElementById('dialClass').style.color = cls.color;
+    document.getElementById('dialClass').textContent = cls.label;
+    document.getElementById('dialSub').textContent = `${subjects.length} subject${subjects.length > 1 ? 's' : ''} · ${totalUnits} unit${totalUnits !== 1 ? 's' : ''}`;
+
+    // Animate arc: circumference = 2π × 65 ≈ 408.4
+    const circ = 408.4;
+    const offset = circ - (gpa / 4.0) * circ;
+    const arc = document.getElementById('dialArc');
+    arc.style.stroke = cls.color;
+    setTimeout(() => { arc.style.strokeDashoffset = offset; }, 50);
+
+    // Stats
+    const highest = subjects.reduce((a, b) => b.points > a.points ? b : a);
+    const lowest  = subjects.reduce((a, b) => b.points < a.points ? b : a);
+    document.getElementById('statsCard').style.display = 'block';
+    document.getElementById('statsStrip').innerHTML = `
+      <div class="stat-box"><div class="stat-val">${gpa.toFixed(2)}</div><div class="stat-lbl">Weighted GPA</div></div>
+      <div class="stat-box"><div class="stat-val">${avgPct !== null ? avgPct.toFixed(1)+'%' : '–'}</div><div class="stat-lbl">Avg Score</div></div>
+      <div class="stat-box" style="border:1px solid rgba(34,197,94,.25);background:#f0fdf4;"><div class="stat-val" style="color:var(--green);">${highest.grade}</div><div class="stat-lbl">Best: ${highest.name}</div></div>
+      <div class="stat-box" style="border:1px solid rgba(239,68,68,.2);background:#fff5f5;"><div class="stat-val" style="color:var(--red);">${lowest.grade}</div><div class="stat-lbl">Lowest: ${lowest.name}</div></div>
+    `;
+
+    // Breakdown
+    document.getElementById('breakdownCard').style.display = 'block';
+    const list = document.getElementById('breakdownList');
+    list.innerHTML = '';
+    const sortedSubjs = [...subjects].sort((a, b) => b.points - a.points);
+    sortedSubjs.forEach(s => {
+      const pct = s.pct !== null ? s.pct : (s.points / 4.0) * 100;
+      const li = document.createElement('li');
+      li.className = 'breakdown-item';
+      li.innerHTML = `
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-name">${s.name}</div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" style="background:${GRADE_COLORS[s.grade]||'var(--blue)'};" data-pct="${pct}"></div>
+          </div>
+        </div>
+        <div class="breakdown-score">${s.pct !== null ? s.pct.toFixed(1)+'%' : '–'}</div>
+        <div class="breakdown-grade" style="background:${GRADE_COLORS[s.grade]+'22'};color:${GRADE_COLORS[s.grade]||'var(--blue)'};">${s.grade}</div>
+      `;
+      list.appendChild(li);
+    });
+    // Animate bars
+    setTimeout(() => {
+      list.querySelectorAll('.breakdown-bar').forEach(b => {
+        b.style.width = Math.min(100, parseFloat(b.dataset.pct)) + '%';
+      });
+    }, 100);
+
+    // Scroll to results on mobile
+    if (window.innerWidth < 860) {
+      document.getElementById('dialCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // Init with 3 rows
+  addRow('Mathematics', '', '');
+  addRow('English', '', '');
+  addRow('Science', '', '');
+</script>
+</body>
+</html>

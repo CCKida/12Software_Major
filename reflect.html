@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scorely – Reflection Assessment</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #1a2747;
+      --blue:   #2d5be3;
+      --sky:    #5b8ef0;
+      --cream:  #f5f3ee;
+      --white:  #ffffff;
+      --slate:  #4a5568;
+      --light:  #eef2fb;
+      --border: #dce4f5;
+      --green:  #22c55e;
+      --red:    #ef4444;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--navy); min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 6vw;
+      background: rgba(245,243,238,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(45,91,227,.1);
+    }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--navy); text-decoration: none; }
+    .logo span { color: var(--blue); }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav ul a { text-decoration: none; font-size: .9rem; font-weight: 500; color: var(--slate); transition: color .2s; }
+    nav ul a:hover, nav ul a.active { color: var(--blue); }
+    .nav-cta { background: var(--blue); color: var(--white) !important; padding: .45rem 1.1rem; border-radius: 6px; }
+    .nav-cta:hover { background: var(--navy) !important; }
+
+    /* PAGE HEADER */
+    .page-header {
+      background: linear-gradient(135deg, var(--navy) 0%, #253461 100%);
+      padding: 4rem 6vw 3rem;
+      position: relative; overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute; top: -80px; right: -80px;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      background: rgba(45,91,227,.18);
+    }
+    .page-header::after {
+      content: '';
+      position: absolute; bottom: -60px; left: 10%;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(91,142,240,.12);
+    }
+    .header-inner { max-width: 820px; margin: 0 auto; position: relative; z-index: 1; }
+    .breadcrumb { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+    .breadcrumb a { color: rgba(255,255,255,.55); text-decoration: none; font-size: .82rem; transition: color .2s; }
+    .breadcrumb a:hover { color: rgba(255,255,255,.9); }
+    .breadcrumb span { color: rgba(255,255,255,.3); font-size: .82rem; }
+    .breadcrumb .current { color: rgba(255,255,255,.8); font-size: .82rem; }
+    .page-header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); line-height: 1.15; }
+    .page-header p { margin-top: .8rem; color: rgba(255,255,255,.68); font-size: 1rem; line-height: 1.65; max-width: 56ch; }
+
+    /* PROGRESS STEPS */
+    .steps-bar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 6vw;
+    }
+    .steps-inner { max-width: 820px; margin: 0 auto; display: flex; align-items: center; gap: 0; }
+    .step { display: flex; align-items: center; gap: .6rem; flex: 1; }
+    .step-num {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 600; flex-shrink: 0;
+      background: var(--border); color: var(--slate);
+      transition: background .3s, color .3s;
+    }
+    .step.active .step-num { background: var(--blue); color: var(--white); }
+    .step.done .step-num { background: var(--green); color: var(--white); }
+    .step-label { font-size: .8rem; font-weight: 500; color: var(--slate); }
+    .step.active .step-label { color: var(--blue); font-weight: 600; }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 .4rem; }
+    .step-line.done { background: var(--green); }
+
+    /* FORM AREA */
+    .form-wrap { max-width: 820px; margin: 2.5rem auto; padding: 0 6vw 4rem; }
+
+    .form-section {
+      background: var(--white); border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 2.2rem 2.4rem; margin-bottom: 1.4rem;
+      animation: fadeUp .5s ease both;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .form-section:nth-child(2) { animation-delay: .08s; }
+    .form-section:nth-child(3) { animation-delay: .16s; }
+    .form-section:nth-child(4) { animation-delay: .24s; }
+    .form-section:nth-child(5) { animation-delay: .32s; }
+
+    .section-head { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.6rem; }
+    .section-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .section-icon svg { width: 20px; height: 20px; stroke: var(--blue); fill: none; stroke-width: 2; }
+    .section-head h2 { font-size: 1.05rem; font-weight: 600; }
+    .section-head p { font-size: .83rem; color: var(--slate); margin-top: .1rem; }
+
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .fields.single { grid-template-columns: 1fr; }
+    .fields.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+    label { display: block; font-size: .82rem; font-weight: 600; color: var(--navy); margin-bottom: .4rem; }
+    label .req { color: var(--blue); margin-left: 2px; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: .72rem 1rem;
+      border: 1.5px solid var(--border); border-radius: 9px;
+      font-family: 'DM Sans', sans-serif; font-size: .92rem;
+      color: var(--navy); background: var(--cream);
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(45,91,227,.1);
+      background: var(--white);
+    }
+    textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+    .hint { font-size: .76rem; color: var(--slate); margin-top: .35rem; }
+
+    /* SCORE SLIDER */
+    .score-block { display: flex; align-items: center; gap: 1.2rem; }
+    .score-block input[type="range"] {
+      flex: 1; -webkit-appearance: none; height: 6px;
+      border-radius: 3px; background: var(--border);
+      cursor: pointer; padding: 0; border: none; box-shadow: none;
+    }
+    .score-block input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--blue); cursor: pointer;
+      box-shadow: 0 2px 6px rgba(45,91,227,.35);
+    }
+    .score-display {
+      min-width: 64px; text-align: center;
+      background: var(--blue); color: var(--white);
+      font-size: 1.1rem; font-weight: 700;
+      padding: .4rem .7rem; border-radius: 8px;
+    }
+
+    /* RATING STARS */
+    .star-row { display: flex; gap: .4rem; margin-top: .3rem; }
+    .star-row button {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.6rem; color: var(--border);
+      transition: color .15s, transform .1s; padding: 0;
+    }
+    .star-row button.lit { color: var(--accent, #f0c040); }
+    .star-row button:hover { transform: scale(1.15); }
+
+    /* MOOD SELECTOR */
+    .mood-row { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .3rem; }
+    .mood-btn {
+      background: var(--cream); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: .5rem .9rem;
+      cursor: pointer; font-size: .85rem; font-weight: 500;
+      color: var(--slate); transition: all .2s; display: flex; align-items: center; gap: .4rem;
+    }
+    .mood-btn:hover { border-color: var(--sky); color: var(--blue); }
+    .mood-btn.active { border-color: var(--blue); background: var(--light); color: var(--blue); font-weight: 600; }
+    .mood-btn .emoji { font-size: 1.1rem; }
+
+    /* SUBMIT */
+    .submit-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+    .btn-submit {
+      display: inline-flex; align-items: center; gap: .6rem;
+      background: var(--blue); color: var(--white);
+      border: none; border-radius: 10px;
+      padding: .88rem 2.2rem; font-family: 'DM Sans', sans-serif;
+      font-size: .96rem; font-weight: 600; cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-submit:hover { background: var(--navy); transform: translateY(-2px); }
+    .btn-submit svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .btn-reset {
+      background: none; border: 1.5px solid var(--border);
+      color: var(--slate); border-radius: 10px;
+      padding: .78rem 1.5rem; font-family: 'DM Sans', sans-serif;
+      font-size: .9rem; cursor: pointer; transition: all .2s;
+    }
+    .btn-reset:hover { border-color: var(--slate); color: var(--navy); }
+
+    /* SUCCESS TOAST */
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+      background: var(--navy); color: var(--white);
+      padding: 1rem 1.6rem; border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.2);
+      display: flex; align-items: center; gap: .8rem;
+      font-size: .92rem; font-weight: 500;
+      transform: translateY(100px); opacity: 0;
+      transition: all .35s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast .tick { width: 22px; height: 22px; background: var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .toast .tick svg { width: 12px; height: 12px; stroke: white; fill: none; stroke-width: 2.5; }
+
+    /* RESULTS PANEL */
+    .result-panel {
+      background: var(--white); border-radius: 18px;
+      border: 2px solid var(--green);
+      padding: 2rem 2.4rem; margin-bottom: 1.4rem;
+      display: none;
+    }
+    .result-panel.show { display: block; animation: fadeUp .4s ease; }
+    .result-panel h3 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 1rem; color: var(--navy); }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.2rem; }
+    .result-stat { background: var(--light); border-radius: 10px; padding: .9rem 1.1rem; }
+    .result-stat .val { font-size: 1.5rem; font-weight: 700; color: var(--blue); }
+    .result-stat .lbl { font-size: .76rem; color: var(--slate); margin-top: .2rem; }
+    .result-text p { font-size: .9rem; line-height: 1.7; color: var(--slate); margin-bottom: .6rem; }
+    .result-text strong { color: var(--navy); }
+
+    @media (max-width: 640px) {
+      .fields, .fields.triple { grid-template-columns: 1fr; }
+      nav ul { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Score<span>ly</span></a>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="reflect.html" class="active">Reflection</a></li>
+    <li><a href="gpa.html" class="nav-cta">GPA Calculator</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="header-inner">
+    <div class="breadcrumb">
+      <a href="index.html">Home</a>
+      <span>›</span>
+      <span class="current">Reflection Assessment</span>
+    </div>
+    <h1>Reflection Assessment Form</h1>
+    <p>Take a moment to review your assessment, understand what went well, and map out clear steps for improvement.</p>
+  </div>
+</div>
+
+<div class="steps-bar">
+  <div class="steps-inner">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div><div class="step-label">Assessment Details</div></div>
+    </div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div><div class="step-label">Performance Review</div></div>
+    </div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div><div class="step-label">Reflection</div></div>
+    </div>
+    <div class="step-line" id="line3"></div>
+    <div class="step" id="step4">
+      <div class="step-num">4</div>
+      <div><div class="step-label">Action Plan</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="form-wrap">
+
+  <!-- RESULT PANEL (shown after submit) -->
+  <div class="result-panel" id="resultPanel">
+    <h3>📋 Your Reflection Summary</h3>
+    <div class="result-grid" id="resultGrid"></div>
+    <div class="result-text" id="resultText"></div>
+  </div>
+
+  <form id="reflectForm" novalidate>
+
+    <!-- SECTION 1: Assessment Details -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <div><h2>Assessment Details</h2><p>Tell us about this assessment</p></div>
+      </div>
+      <div class="fields">
+        <div>
+          <label>Your Name <span class="req">*</span></label>
+          <input type="text" id="studentName" placeholder="e.g. Alex Johnson" required/>
+        </div>
+        <div>
+          <label>Subject <span class="req">*</span></label>
+          <input type="text" id="subject" placeholder="e.g. Mathematics" required/>
+        </div>
+        <div>
+          <label>Assessment Name <span class="req">*</span></label>
+          <input type="text" id="assessmentName" placeholder="e.g. Mid-Year Exam" required/>
+        </div>
+        <div>
+          <label>Assessment Type</label>
+          <select id="assessmentType">
+            <option value="">Select type…</option>
+            <option>Exam</option>
+            <option>Assignment</option>
+            <option>Quiz</option>
+            <option>Project</option>
+            <option>Presentation</option>
+            <option>Lab Report</option>
+            <option>Essay</option>
+          </select>
+        </div>
+        <div>
+          <label>Date Received</label>
+          <input type="text" id="dateReceived" placeholder="e.g. 30 May 2025"/>
+        </div>
+        <div>
+          <label>Teacher / Assessor</label>
+          <input type="text" id="teacher" placeholder="e.g. Mr. Smith"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Performance -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <div><h2>Performance Review</h2><p>Record your score and how you felt</p></div>
+      </div>
+
+      <div class="fields triple" style="margin-bottom:1.4rem;">
+        <div>
+          <label>Score Received (%)</label>
+          <div class="score-block">
+            <input type="range" id="scoreRange" min="0" max="100" value="70" oninput="updateScore(this.value)"/>
+            <div class="score-display" id="scoreDisplay">70%</div>
+          </div>
+          <p class="hint">Drag the slider to set your score</p>
+        </div>
+        <div>
+          <label>Maximum Mark</label>
+          <input type="number" id="maxMark" placeholder="e.g. 100" min="1"/>
+        </div>
+        <div>
+          <label>Weighting (%)</label>
+          <input type="number" id="weighting" placeholder="e.g. 30" min="0" max="100"/>
+        </div>
+      </div>
+
+      <div>
+        <label>How did you feel about this result?</label>
+        <div class="mood-row" id="moodRow">
+          <button type="button" class="mood-btn" data-mood="proud" onclick="selectMood(this)"><span class="emoji">😊</span> Proud</button>
+          <button type="button" class="mood-btn" data-mood="okay" onclick="selectMood(this)"><span class="emoji">😐</span> Okay</button>
+          <button type="button" class="mood-btn" data-mood="disappointed" onclick="selectMood(this)"><span class="emoji">😔</span> Disappointed</button>
+          <button type="button" class="mood-btn" data-mood="surprised" onclick="selectMood(this)"><span class="emoji">😲</span> Surprised</button>
+          <button type="button" class="mood-btn" data-mood="motivated" onclick="selectMood(this)"><span class="emoji">💪</span> Motivated</button>
+          <button type="button" class="mood-btn" data-mood="stressed" onclick="selectMood(this)"><span class="emoji">😰</span> Stressed</button>
+        </div>
+      </div>
+
+      <div style="margin-top:1.4rem;">
+        <label>Rate your overall preparation (1–5 stars)</label>
+        <div class="star-row" id="starRow">
+          <button type="button" onclick="rateStar(1)">★</button>
+          <button type="button" onclick="rateStar(2)">★</button>
+          <button type="button" onclick="rateStar(3)">★</button>
+          <button type="button" onclick="rateStar(4)">★</button>
+          <button type="button" onclick="rateStar(5)">★</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Reflection -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        </div>
+        <div><h2>Reflection</h2><p>Honestly assess your strengths and areas for growth</p></div>
+      </div>
+      <div class="fields single">
+        <div>
+          <label>What went well? <span class="req">*</span></label>
+          <textarea id="wentWell" placeholder="Describe what you did effectively — your preparation, understanding, technique, or time management…" required></textarea>
+          <p class="hint">Be specific! Vague answers like "I tried hard" are less useful than "I revised the formulas for 3 nights".</p>
+        </div>
+        <div>
+          <label>What could be improved? <span class="req">*</span></label>
+          <textarea id="toImprove" placeholder="Identify gaps — which topics tripped you up? What skills need work? Were there external factors?" required></textarea>
+        </div>
+        <div>
+          <label>What surprised you about this result?</label>
+          <textarea id="surprised" placeholder="Unexpected difficulty, topics you thought you knew but didn't, or areas you did better than expected…"></textarea>
+        </div>
+        <div>
+          <label>What resources did you use to prepare?</label>
+          <input type="text" id="resources" placeholder="e.g. Textbook chapters 4–6, YouTube, past papers, study group…"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Action Plan -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div><h2>Action Plan</h2><p>Commit to concrete next steps</p></div>
+      </div>
+      <div class="fields single">
+        <div>
+          <label>My action plan for next time <span class="req">*</span></label>
+          <textarea id="actionPlan" placeholder="List 2–3 specific things you will do differently. E.g. 'I will complete 5 past papers before the next exam' or 'I will attend the Thursday help session'…" required></textarea>
+        </div>
+        <div>
+          <label>Who can support you?</label>
+          <input type="text" id="support" placeholder="e.g. My teacher, tutor, study partner, parent…"/>
+        </div>
+        <div>
+          <label>Target score for next assessment (%)</label>
+          <input type="number" id="targetScore" placeholder="e.g. 85" min="0" max="100"/>
+        </div>
+        <div>
+          <label>Additional notes</label>
+          <textarea id="notes" style="min-height:80px;" placeholder="Anything else you'd like to record…"></textarea>
+        </div>
+      </div>
+
+      <div class="submit-row">
+        <button type="button" class="btn-reset" onclick="resetForm()">Clear form</button>
+        <button type="submit" class="btn-submit">
+          <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          Save Reflection
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<div class="toast" id="toast">
+  <div class="tick"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+  Reflection saved successfully!
+</div>
+
+<script>
+  let currentMood = '';
+  let currentStars = 0;
+
+  function updateScore(v) {
+    document.getElementById('scoreDisplay').textContent = v + '%';
+  }
+
+  function selectMood(btn) {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMood = btn.dataset.mood;
+  }
+
+  function rateStar(n) {
+    currentStars = n;
+    document.querySelectorAll('#starRow button').forEach((b, i) => {
+      b.classList.toggle('lit', i < n);
+    });
+  }
+
+  // Step progress tracking
+  const stepFields = {
+    1: ['studentName','subject','assessmentName'],
+    2: [],
+    3: ['wentWell','toImprove'],
+    4: ['actionPlan'],
+  };
+
+  function updateSteps() {
+    let maxDone = 0;
+    [1,2,3,4].forEach(s => {
+      const fields = stepFields[s];
+      const done = fields.every(id => document.getElementById(id)?.value.trim());
+      if (done) maxDone = s;
+    });
+    [1,2,3,4].forEach(s => {
+      const el = document.getElementById('step'+s);
+      el.classList.remove('active','done');
+      if (s <= maxDone) el.classList.add('done');
+      else if (s === maxDone+1) el.classList.add('active');
+    });
+    [1,2,3].forEach(l => {
+      const el = document.getElementById('line'+l);
+      el.classList.toggle('done', l <= maxDone);
+    });
+  }
+
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', updateSteps);
+  });
+
+  document.getElementById('reflectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const required = ['studentName','subject','assessmentName','wentWell','toImprove','actionPlan'];
+    let valid = true;
+    required.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) {
+        el.style.borderColor = 'var(--red)';
+        valid = false;
+      } else {
+        el.style.borderColor = '';
+      }
+    });
+    if (!valid) { window.scrollTo({top:0,behavior:'smooth'}); return; }
+
+    const score = document.getElementById('scoreRange').value;
+    const target = document.getElementById('targetScore').value;
+    const diff = target ? (parseInt(target) - parseInt(score)) : null;
+
+    // Build result panel
+    const grid = document.getElementById('resultGrid');
+    const text = document.getElementById('resultText');
+
+    grid.innerHTML = `
+      <div class="result-stat"><div class="val">${score}%</div><div class="lbl">Score Received</div></div>
+      <div class="result-stat"><div class="val">${currentStars || '–'}/5</div><div class="lbl">Preparation Rating</div></div>
+      <div class="result-stat"><div class="val">${target ? target+'%' : '–'}</div><div class="lbl">Target Next Time</div></div>
+      <div class="result-stat"><div class="val">${diff !== null ? (diff > 0 ? '+'+diff : diff)+'%' : '–'}</div><div class="lbl">Improvement Goal</div></div>
+    `;
+
+    text.innerHTML = `
+      <p><strong>✅ What went well:</strong> ${document.getElementById('wentWell').value}</p>
+      <p><strong>📈 To improve:</strong> ${document.getElementById('toImprove').value}</p>
+      <p><strong>🎯 Action plan:</strong> ${document.getElementById('actionPlan').value}</p>
+    `;
+
+    const panel = document.getElementById('resultPanel');
+    panel.classList.add('show');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Mark all steps done
+    [1,2,3,4].forEach(s => {
+      const el = document.getElementById('step'+s);
+      el.classList.remove('active'); el.classList.add('done');
+    });
+    [1,2,3].forEach(l => document.getElementById('line'+l).classList.add('done'));
+
+    showToast();
+  });
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  function resetForm() {
+    document.getElementById('reflectForm').reset();
+    document.getElementById('scoreDisplay').textContent = '70%';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#starRow button').forEach(b => b.classList.remove('lit'));
+    document.getElementById('resultPanel').classList.remove('show');
+    currentMood = ''; currentStars = 0;
+    updateSteps();
+  }
+</script>
+</body>
+</html>
