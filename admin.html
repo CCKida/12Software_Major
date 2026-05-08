@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorely Admin – ML Graphs</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy: #1a2747;
+      --blue: #2d5be3;
+      --cream: #f5f3ee;
+      --white: #ffffff;
+      --slate: #4a5568;
+      --light: #eef2fb;
+      --border: #dce4f5;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--navy); min-height: 100vh; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 6vw; background: rgba(245,243,238,.94); border-bottom: 1px solid rgba(45,91,227,.12); }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--navy); text-decoration: none; }
+    .logo span { color: var(--blue); }
+    nav ul { list-style: none; display: flex; gap: 1.6rem; }
+    nav ul a { text-decoration: none; color: var(--slate); font-weight: 500; }
+    nav ul a:hover { color: var(--blue); }
+    nav ul a.active, nav ul a.nav-cta { color: var(--white); background: var(--blue); padding: .55rem 1rem; border-radius: 8px; }
+    .page-header { padding: 3.5rem 6vw 2rem; max-width: 960px; margin: 0 auto; }
+    .page-header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem, 4vw, 3rem); margin-bottom: .8rem; }
+    .page-header p { font-size: 1rem; line-height: 1.75; color: var(--slate); max-width: 64ch; }
+    .content { max-width: 1100px; margin: 0 auto; padding: 0 6vw 4rem; display: grid; gap: 1.8rem; }
+    .card { background: var(--white); border-radius: 18px; border: 1px solid var(--border); padding: 1.8rem; }
+    .card h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+    .graph { width: 100%; border-radius: 16px; box-shadow: 0 22px 50px rgba(26,39,71,.08); }
+    .note { margin-top: .8rem; color: var(--slate); font-size: .95rem; line-height: 1.7; }
+    @media (max-width: 840px) { .page-header, .content { padding: 0 4vw; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">Score<span>ly</span></a>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/gpa">GPA Calculator</a></li>
+      <li><a href="/reflect">Reflection</a></li>
+      <li><a href="/admin" class="active nav-cta">Admin</a></li>
+    </ul>
+  </nav>
+
+  <section class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>Visualize the machine learning training data and the polynomial regression fit used to predict GPA from score.</p>
+  </section>
+
+  <main class="content">
+    <div class="card">
+      <h2>Training Data: Score vs GPA</h2>
+      <img class="graph" src="/admin/plot/score-vs-gpa" alt="Score vs GPA training data graph" />
+      <p class="note">This chart shows the raw historical score-to-GPA data points loaded from <code>data.csv</code>.</p>
+    </div>
+
+    <div class="card">
+      <h2>Polynomial Regression Fit</h2>
+      <img class="graph" src="/admin/plot/polynomial-fit" alt="Polynomial regression fit graph" />
+      <p class="note">The fitted polynomial curve displays how the model estimates GPA across score values.</p>
+    </div>
+  </main>
+</body>
+</html>
