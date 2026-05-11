@@ -1,11 +1,15 @@
-score,unit
-50,1.0
-60,1.5
-70,2.0
-75,2.5
-80,3.0
-85,3.5
-90,4.0
-95,4.5
-100,5.0
-
+Subject_Type,Grade,Unit
+Math,92,2
+Science,85,2
+English,78,2
+Visual Arts,88,2
+History,80,2
+Ancient History,82,2
+Modern History,79,2
+Geography,90,2
+Physical Education,95,2
+Music,87,2
+Drama,83,2
+Computer Science,91,2
+Economics,84,2
+Psychology,86,2
