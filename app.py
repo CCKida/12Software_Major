@@ -11,6 +11,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 import pandas as pd
+import csv
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
@@ -97,6 +98,36 @@ def predict():
     grade_poly = poly.transform([[grade]])
     predicted_unit = model.predict(grade_poly)[0]
     return f"Predicted Unit for Grade {grade}: {predicted_unit:.2f}"
+
+@app.route("/log_gpa", methods=["POST"])
+def log_gpa():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    gpa = data.get('gpa')
+    subjects = data.get('subjects', [])
+    timestamp = datetime.datetime.now().isoformat()
+
+    # Prepare CSV row
+    row = {
+        'timestamp': timestamp,
+        'gpa': gpa,
+        'num_subjects': len(subjects),
+        'subjects': json.dumps(subjects)  # Store as JSON string
+    }
+
+    csv_path = os.path.join(script_dir, 'user_gpa_data.csv')
+    file_exists = os.path.isfile(csv_path)
+
+    with open(csv_path, 'a', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['timestamp', 'gpa', 'num_subjects', 'subjects']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
+
+    return jsonify({"status": "logged"}), 200
 
 # ── Run ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

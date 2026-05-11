@@ -1,5 +1,6 @@
 # Year 12 Software Automation: Polynomial Regression Estimator
 # This script loads the CSV dataset and fits a polynomial model to predict unit values from score values.
+# It also calculates the weighted average GPA based on units and scores.
 
 import os
 import numpy as np
@@ -11,16 +12,26 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, 'data.csv')
 df = pd.read_csv(csv_path)
 # Trim whitespace from column names in case headers have extra spaces
-if df.columns.str.contains('score').any() or df.columns.str.contains('unit').any():
-    df.columns = df.columns.str.strip()
+df.columns = df.columns.str.strip()
 
-if 'score' not in df.columns or 'unit' not in df.columns:
-    raise ValueError("data.csv must contain 'score' and 'unit' columns")
+# Check for correct column names
+if 'Grade' not in df.columns or 'Unit' not in df.columns:
+    raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
 
-scores = df['score'].values
-units = df['unit'].values
+scores = df['Grade'].values
+units = df['Unit'].values
 
-# Step 2: Fit a polynomial model using NumPy
+# Step 2: Calculate the weighted average GPA
+def calculate_weighted_average(scores, units):
+    total_weighted_score = np.sum(scores * units)
+    total_units = np.sum(units)
+    if total_units == 0:
+        return 0
+    return total_weighted_score / total_units
+
+average_gpa = calculate_weighted_average(scores, units)
+
+# Step 3: Fit a polynomial model using NumPy
 # degree = 2 means y = a*x^2 + b*x + c
 degree = 2
 coeffs = np.polyfit(scores, units, degree)
@@ -29,7 +40,7 @@ coeffs = np.polyfit(scores, units, degree)
 def predict_unit(score_value):
     return np.polyval(coeffs, score_value)
 
-# Step 3: Print the fitted polynomial equation
+# Step 4: Print the fitted polynomial equation
 print('=' * 70)
 print('POLYNOMIAL REGRESSION MODEL (Degree 2)')
 print('=' * 70)
@@ -40,7 +51,17 @@ print('where x = score')
 print('=' * 70)
 print()
 
-# Step 4: Predict a sample score
+# Step 5: Print the calculated average GPA
+print('=' * 70)
+print('WEIGHTED AVERAGE GPA CALCULATION')
+print('=' * 70)
+print(f'Total Weighted Score: {np.sum(scores * units)}')
+print(f'Total Units: {np.sum(units)}')
+print(f'Average GPA: {average_gpa:.2f}')
+print('=' * 70)
+print()
+
+# Step 6: Predict a sample score
 sample_score = 92
 predicted_unit = predict_unit(sample_score)
 print('=' * 70)

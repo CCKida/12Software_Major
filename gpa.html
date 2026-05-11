@@ -232,7 +232,7 @@
       <span class="cur">GPA Calculator</span>
     </div>
     <h1>GPA Calculator</h1>
-    <p>Add your subjects and scores — Scorely will instantly calculate your GPA, weighted average, and grade breakdown.</p>
+    <p>Add 5 to 10 subjects and scores — Scorely will instantly calculate your GPA, weighted average, and grade breakdown.</p>
   </div>
 </div>
 
@@ -349,6 +349,8 @@
     'Legal', 'VET Course',
   ];
 
+  const MIN_SUBJECTS = 5;
+  const MAX_SUBJECTS = 10;
   let mode = 'percent';
   let rowCount = 0;
 
@@ -366,6 +368,28 @@
     document.getElementById('colScoreLabel').textContent = label[m];
     document.querySelectorAll('.score-input').forEach(el => {
       el.placeholder = m === 'percent' ? 'e.g. 84' : m === 'letter' ? 'e.g. B' : 'e.g. 75/100';
+    });
+  }
+
+  function updateControls() {
+    const subjectRows = document.querySelectorAll('.subject-row');
+    const canAdd = subjectRows.length < MAX_SUBJECTS;
+    const canRemove = subjectRows.length > MIN_SUBJECTS;
+    const addBtn = document.querySelector('.btn-add');
+
+    if (addBtn) {
+      addBtn.disabled = !canAdd;
+      addBtn.style.opacity = canAdd ? '' : '0.5';
+      addBtn.style.cursor = canAdd ? 'pointer' : 'not-allowed';
+    }
+
+    subjectRows.forEach(row => {
+      const delBtn = row.querySelector('.btn-del');
+      if (delBtn) {
+        delBtn.disabled = !canRemove;
+        delBtn.style.opacity = canRemove ? '' : '0.5';
+        delBtn.style.cursor = canRemove ? 'pointer' : 'not-allowed';
+      }
     });
   }
 
@@ -387,6 +411,12 @@
   }
 
   function addRow(name='', score='', units='') {
+    const currentRows = document.querySelectorAll('.subject-row').length;
+    if (currentRows >= MAX_SUBJECTS) {
+      alert(`You can add a maximum of ${MAX_SUBJECTS} subjects.`);
+      return;
+    }
+
     rowCount++;
     const id = rowCount;
     const div = document.createElement('div');
@@ -403,6 +433,7 @@
       <button class="btn-del" onclick="removeRow(${id})" title="Remove">✕</button>
     `;
     document.getElementById('subjectList').appendChild(div);
+    updateControls();
 
     // Live grade preview
     div.querySelector('.score-input').addEventListener('input', function() {
@@ -427,13 +458,15 @@
   function removeRow(id) {
     const el = document.getElementById('row-' + id);
     if (el) el.remove();
+    updateControls();
   }
 
   function clearAll() {
     document.getElementById('subjectList').innerHTML = '';
     rowCount = 0;
     hideResults();
-    addRow(); addRow(); addRow();
+    for (let i = 0; i < MIN_SUBJECTS; i++) addRow();
+    updateControls();
   }
 
   function hideResults() {
@@ -466,6 +499,14 @@
   function calculate() {
     const rows = document.querySelectorAll('.subject-row');
     if (!rows.length) return;
+    if (rows.length < MIN_SUBJECTS) {
+      alert(`Please enter at least ${MIN_SUBJECTS} subjects to calculate GPA.`);
+      return;
+    }
+    if (rows.length > MAX_SUBJECTS) {
+      alert(`Please enter no more than ${MAX_SUBJECTS} subjects to calculate GPA.`);
+      return;
+    }
 
     let subjects = [];
     let valid = true;
@@ -565,12 +606,21 @@
     if (window.innerWidth < 860) {
       document.getElementById('dialCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // Log the data to server
+    fetch('/log_gpa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gpa: gpa, subjects: subjects })
+    }).catch(err => console.error('Failed to log GPA data:', err));
   }
 
-  // Init with 3 rows
+  // Init with minimum required rows
   addRow('Mathematics', '', '');
   addRow('English', '', '');
   addRow('Science', '', '');
+  addRow('History', '', '');
+  addRow('Biology', '', '');
 </script>
 </body>
 </html>
