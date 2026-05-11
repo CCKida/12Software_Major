@@ -118,6 +118,7 @@
       transition: all .2s; flex-shrink: 0;
     }
     .btn-del:hover { background: #fff1f1; border-color: var(--red); color: var(--red); }
+    .score-input.error { border-color: var(--red); background: #fff1f1; }
 
     .btn-add {
       display: flex; align-items: center; gap: .5rem;
@@ -247,6 +248,7 @@
         <button class="mode-tab active" onclick="setMode('percent', this)">% Score</button>
         <button class="mode-tab" onclick="setMode('letter', this)">Grade (A–E)</button>
       </div>
+      <p style="color:var(--slate);font-size:.9rem;margin-bottom:1rem;">Enter between 5 and 10 subjects to calculate your GPA and save the result.</p>
 
       <div class="table-header">
         <span>Subject</span>
@@ -334,6 +336,9 @@
   // Australian school grade scale (NSW HSC / ATAR aligned)
   const GRADE_COLORS = {
     'A':'#22c55e', 'B':'#3b82f6', 'C':'#f59e0b', 'D':'#ef4444', 'E':'#6b7280'
+  };
+  const GRADE_POINTS = {
+    'A': 4, 'B': 3, 'C': 2, 'D': 1, 'E': 0
   };
 
   const SUBJECTS = [

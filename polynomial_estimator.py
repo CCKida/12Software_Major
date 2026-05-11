@@ -3,6 +3,7 @@
 # It also calculates the weighted average GPA based on units and scores.
 
 import os
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,6 +18,42 @@ df.columns = df.columns.str.strip()
 # Check for correct column names
 if 'Grade' not in df.columns or 'Unit' not in df.columns:
     raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
+
+df = df[['Grade', 'Unit']].copy()
+
+# Add any logged user GPA data when available
+user_csv_path = os.path.join(script_dir, 'user_gpa_data.csv')
+GRADE_TO_PCT = {'A': 92, 'B': 78, 'C': 62, 'D': 47, 'E': 25}
+if os.path.isfile(user_csv_path):
+    try:
+        user_df = pd.read_csv(user_csv_path)
+        extra_rows = []
+        for _, row in user_df.iterrows():
+            subjects = row.get('subjects')
+            if not subjects or pd.isna(subjects):
+                continue
+            try:
+                entries = json.loads(subjects)
+            except Exception:
+                continue
+            for item in entries:
+                units = item.get('units')
+                if units is None or pd.isna(units):
+                    continue
+                pct = item.get('pct')
+                grade = item.get('grade')
+                if pct is not None and isinstance(pct, (int, float)) and not np.isnan(pct):
+                    grade_value = pct
+                else:
+                    grade_value = GRADE_TO_PCT.get(str(grade).upper())
+                if grade_value is None:
+                    continue
+                extra_rows.append({'Grade': grade_value, 'Unit': units})
+        if extra_rows:
+            df = pd.concat([df, pd.DataFrame(extra_rows)], ignore_index=True)
+            print(f"Loaded {len(extra_rows)} additional training rows from user_gpa_data.csv")
+    except Exception as e:
+        print(f"Unable to load user_gpa_data.csv: {e}")
 
 scores = df['Grade'].values
 units = df['Unit'].values

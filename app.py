@@ -18,18 +18,62 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 # Load data from CSV for polynomial regression
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(script_dir, 'data.csv')
-data = pd.read_csv(data_path)
-if 'Grade' not in data.columns or 'Unit' not in data.columns:
-    raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
+user_data_path = os.path.join(script_dir, 'user_gpa_data.csv')
+GRADE_TO_PCT = {'A': 92, 'B': 78, 'C': 62, 'D': 47, 'E': 25}
 
-X = data[['Grade']].values
-y = data['Unit'].values
 
-# Polynomial features (degree 2)
-poly = PolynomialFeatures(degree=2)
-X_poly = poly.fit_transform(X)
-model = LinearRegression()
-model.fit(X_poly, y)
+def load_training_data():
+    data = pd.read_csv(data_path)
+    if 'Grade' not in data.columns or 'Unit' not in data.columns:
+        raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
+    data = data[['Grade', 'Unit']].copy()
+
+    if os.path.isfile(user_data_path):
+        try:
+            user_df = pd.read_csv(user_data_path)
+            extra_rows = []
+            for _, row in user_df.iterrows():
+                subjects = row.get('subjects')
+                if not subjects or pd.isna(subjects):
+                    continue
+                try:
+                    entries = json.loads(subjects)
+                except Exception:
+                    continue
+                for item in entries:
+                    units = item.get('units')
+                    if units is None or pd.isna(units):
+                        continue
+                    pct = item.get('pct')
+                    grade = item.get('grade')
+                    if pct is not None and isinstance(pct, (int, float)) and not np.isnan(pct):
+                        grade_value = pct
+                    else:
+                        grade_value = GRADE_TO_PCT.get(str(grade).upper())
+                    if grade_value is None:
+                        continue
+                    extra_rows.append({'Grade': grade_value, 'Unit': units})
+            if extra_rows:
+                user_data = pd.DataFrame(extra_rows)
+                data = pd.concat([data, user_data], ignore_index=True)
+        except Exception:
+            pass
+
+    return data
+
+
+def retrain_model():
+    global data, X, y, poly, model
+    data = load_training_data()
+    X = data[['Grade']].values
+    y = data['Unit'].values
+    poly = PolynomialFeatures(degree=2)
+    X_poly = poly.fit_transform(X)
+    model = LinearRegression()
+    model.fit(X_poly, y)
+
+
+retrain_model()
 
 
 def fig_to_png_bytes(fig):
@@ -117,16 +161,16 @@ def log_gpa():
         'subjects': json.dumps(subjects)  # Store as JSON string
     }
 
-    csv_path = os.path.join(script_dir, 'user_gpa_data.csv')
-    file_exists = os.path.isfile(csv_path)
+    file_exists = os.path.isfile(user_data_path)
 
-    with open(csv_path, 'a', newline='', encoding='utf-8') as csvfile:
+    with open(user_data_path, 'a', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['timestamp', 'gpa', 'num_subjects', 'subjects']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         if not file_exists:
             writer.writeheader()
         writer.writerow(row)
 
+    retrain_model()
     return jsonify({"status": "logged"}), 200
 
 # ── Run ──────────────────────────────────────────────────────────────────────
