@@ -355,6 +355,9 @@
           <div class="score-block">
             <input type="range" id="scoreRange" min="0" max="100" value="70" oninput="updateScore(this.value)"/>
             <div class="score-display" id="scoreDisplay">70%</div>
+            <div style="min-width:140px; text-align:center; font-size:.9rem; color:var(--slate);">
+              <div id="predictedPctDisplay">Predicted to reach max: –</div>
+            </div>
           </div>
           <p class="hint">Drag the slider to set your score</p>
         </div>
@@ -543,6 +546,7 @@
 
     grid.innerHTML = `
       <div class="result-stat"><div class="val">${score}%</div><div class="lbl">Score Received</div></div>
+      <div class="result-stat"><div class="val">${predictedPctDisplayText(score, document.getElementById('maxMark').value)}</div><div class="lbl">Predicted % Needed</div></div>
       <div class="result-stat"><div class="val">${currentStars || '–'}/5</div><div class="lbl">Preparation Rating</div></div>
       <div class="result-stat"><div class="val">${target ? target+'%' : '–'}</div><div class="lbl">Target Next Time</div></div>
       <div class="result-stat"><div class="val">${diff !== null ? (diff > 0 ? '+'+diff : diff)+'%' : '–'}</div><div class="lbl">Improvement Goal</div></div>
@@ -583,6 +587,66 @@
     currentMood = ''; currentStars = 0;
     updateSteps();
   }
+
+  // --- Prediction integration ---
+  let pctPredictions = [];
+
+  function loadPredictions() {
+    fetch('reflect_predictions.csv')
+      .then(r => { if (!r.ok) throw new Error('no csv'); return r.text(); })
+      .then(txt => parseCsvPredictions(txt))
+      .catch(() => { pctPredictions = []; });
+  }
+
+  function parseCsvPredictions(txt) {
+    const lines = txt.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return;
+    const headers = lines[0].split(',').map(h => h.trim());
+    const iScore = headers.indexOf('score');
+    const iMax = headers.indexOf('max_mark');
+    const iPred = headers.indexOf('predicted_pct');
+    if (iScore === -1 || iMax === -1 || iPred === -1) return;
+    pctPredictions = lines.slice(1).map(l => {
+      const cols = l.split(',');
+      return { score: parseFloat(cols[iScore]), max_mark: parseFloat(cols[iMax]), predicted_pct: parseFloat(cols[iPred]) };
+    }).filter(r => !isNaN(r.score) && !isNaN(r.max_mark) && !isNaN(r.predicted_pct));
+  }
+
+  function getPredictedPct(scoreVal, maxVal) {
+    if (!pctPredictions || pctPredictions.length === 0) return null;
+    const s = parseFloat(scoreVal);
+    const m = parseFloat(maxVal);
+    if (isNaN(s) || isNaN(m)) return null;
+    // find nearest neighbor by Euclidean distance in (score, max_mark)
+    let best = null; let bestDist = Infinity;
+    for (const r of pctPredictions) {
+      const d = Math.hypot(r.score - s, r.max_mark - m);
+      if (d < bestDist) { bestDist = d; best = r; }
+    }
+    return best ? best.predicted_pct : null;
+  }
+
+  function updatePredictedDisplay() {
+    const score = document.getElementById('scoreRange').value;
+    const max = document.getElementById('maxMark').value || 100;
+    const p = getPredictedPct(score, max);
+    const el = document.getElementById('predictedPctDisplay');
+    if (p === null || p === undefined) el.textContent = 'Predicted to reach max: –';
+    else el.textContent = 'Predicted to reach max: ' + Math.round(p) + '%';
+  }
+
+  function predictedPctDisplayText(score, max) {
+    const p = getPredictedPct(score, max || 100);
+    return (p === null || p === undefined) ? '–' : Math.round(p) + '%';
+  }
+
+  // load predictions on page ready and update when score/max change
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPredictions();
+    updatePredictedDisplay();
+    document.getElementById('scoreRange').addEventListener('input', updatePredictedDisplay);
+    document.getElementById('maxMark').addEventListener('input', updatePredictedDisplay);
+  });
 </script>
 </body>
 </html>
