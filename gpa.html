@@ -129,6 +129,12 @@
       transition: all .2s; margin-top: .4rem;
     }
     .btn-add:hover { border-color: var(--blue); color: var(--blue); background: var(--light); }
+    .limit-note {
+      margin: .4rem 0 0;
+      font-size: .82rem;
+      color: var(--slate);
+      line-height: 1.4;
+    }
 
     .calc-row { display: flex; gap: .8rem; margin-top: 1.4rem; }
     .btn-calc {
@@ -264,6 +270,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Add subject
       </button>
+      <p class="limit-note">Max 10 subjects can be added.</p>
 
       <div class="calc-row">
         <button class="btn-calc" onclick="calculate()">Calculate GPA</button>
@@ -509,7 +516,7 @@
       return;
     }
     if (rows.length > MAX_SUBJECTS) {
-      alert(`Please enter no more than ${MAX_SUBJECTS} subjects to calculate GPA.`);
+      alert(`Please enter no more than ${MAX_SUBJECTS} subjects to calculate Average/GPA.`);
       return;
     }
 

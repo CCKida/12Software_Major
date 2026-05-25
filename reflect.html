@@ -546,10 +546,9 @@
 
     grid.innerHTML = `
       <div class="result-stat"><div class="val">${score}%</div><div class="lbl">Score Received</div></div>
-      <div class="result-stat"><div class="val">${predictedPctDisplayText(score, document.getElementById('maxMark').value)}</div><div class="lbl">Predicted % Needed</div></div>
       <div class="result-stat"><div class="val">${currentStars || '–'}/5</div><div class="lbl">Preparation Rating</div></div>
       <div class="result-stat"><div class="val">${target ? target+'%' : '–'}</div><div class="lbl">Target Next Time</div></div>
-      <div class="result-stat"><div class="val">${diff !== null ? (diff > 0 ? '+'+diff : diff)+'%' : '–'}</div><div class="lbl">Improvement Goal</div></div>
+      <div class="result-stat"><div class="val">${diff !== null ? (diff > 0 ? '+'+diff : diff)+'%' : '–'}</div><div class="lbl">Effort to reach your goal</div></div>
     `;
 
     text.innerHTML = `

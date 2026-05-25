@@ -69,6 +69,3 @@ http://localhost:5000
 - The `/log_gpa` endpoint saves submitted GPA and subject data to `user_gpa_data.csv`.
 - If `user_gpa_data.csv` does not exist, it is created automatically on first submission.
 
-## License
-
-This repository is ready to commit to GitHub. Feel free to add a license file if you want to open source it.
