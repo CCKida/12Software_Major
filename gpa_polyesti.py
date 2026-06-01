@@ -10,26 +10,26 @@ import matplotlib.pyplot as plt
 
 # Step 1: Load historical data from CSV file
 script_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(script_dir, 'data.csv')
+csv_path = os.path.join(script_dir, "data.csv")
 df = pd.read_csv(csv_path)
 # Trim whitespace from column names in case headers have extra spaces
 df.columns = df.columns.str.strip()
 
 # Check for correct column names
-if 'Grade' not in df.columns or 'Unit' not in df.columns:
+if "Grade" not in df.columns or "Unit" not in df.columns:
     raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
 
-df = df[['Grade', 'Unit']].copy()
+df = df[["Grade", "Unit"]].copy()
 
 # Add any logged user GPA data when available
-user_csv_path = os.path.join(script_dir, 'user_gpa_data.csv')
-GRADE_TO_PCT = {'A': 92, 'B': 78, 'C': 62, 'D': 47, 'E': 25}
+user_csv_path = os.path.join(script_dir, "user_gpa_data.csv")
+GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
 if os.path.isfile(user_csv_path):
     try:
         user_df = pd.read_csv(user_csv_path)
         extra_rows = []
         for _, row in user_df.iterrows():
-            subjects = row.get('subjects')
+            subjects = row.get("subjects")
             if not subjects or pd.isna(subjects):
                 continue
             try:
@@ -37,26 +37,33 @@ if os.path.isfile(user_csv_path):
             except Exception:
                 continue
             for item in entries:
-                units = item.get('units')
+                units = item.get("units")
                 if units is None or pd.isna(units):
                     continue
-                pct = item.get('pct')
-                grade = item.get('grade')
-                if pct is not None and isinstance(pct, (int, float)) and not np.isnan(pct):
+                pct = item.get("pct")
+                grade = item.get("grade")
+                if (
+                    pct is not None
+                    and isinstance(pct, (int, float))
+                    and not np.isnan(pct)
+                ):
                     grade_value = pct
                 else:
                     grade_value = GRADE_TO_PCT.get(str(grade).upper())
                 if grade_value is None:
                     continue
-                extra_rows.append({'Grade': grade_value, 'Unit': units})
+                extra_rows.append({"Grade": grade_value, "Unit": units})
         if extra_rows:
             df = pd.concat([df, pd.DataFrame(extra_rows)], ignore_index=True)
-            print(f"Loaded {len(extra_rows)} additional training rows from user_gpa_data.csv")
+            print(
+                f"Loaded {len(extra_rows)} additional training rows from user_gpa_data.csv"
+            )
     except Exception as e:
         print(f"Unable to load user_gpa_data.csv: {e}")
 
-scores = df['Grade'].values
-units = df['Unit'].values
+scores = df["Grade"].values
+units = df["Unit"].values
+
 
 # Step 2: Calculate the weighted average GPA
 def calculate_weighted_average(scores, units):
@@ -66,6 +73,7 @@ def calculate_weighted_average(scores, units):
         return 0
     return total_weighted_score / total_units
 
+
 average_gpa = calculate_weighted_average(scores, units)
 
 # Step 3: Fit a polynomial model using NumPy
@@ -73,40 +81,42 @@ average_gpa = calculate_weighted_average(scores, units)
 degree = 2
 coeffs = np.polyfit(scores, units, degree)
 
+
 # Helper to predict unit from score
 def predict_unit(score_value):
     return np.polyval(coeffs, score_value)
 
+
 # Step 4: Print the fitted polynomial equation
-print('=' * 70)
-print('POLYNOMIAL REGRESSION MODEL (Degree 2)')
-print('=' * 70)
-print(f'Coefficients: {coeffs}')
-print('Equation:')
-print(f'Unit = {coeffs[0]:.6f}×x² + {coeffs[1]:.6f}×x + {coeffs[2]:.6f}')
-print('where x = score')
-print('=' * 70)
+print("=" * 70)
+print("POLYNOMIAL REGRESSION MODEL (Degree 2)")
+print("=" * 70)
+print(f"Coefficients: {coeffs}")
+print("Equation:")
+print(f"Unit = {coeffs[0]:.6f}×x² + {coeffs[1]:.6f}×x + {coeffs[2]:.6f}")
+print("where x = score")
+print("=" * 70)
 print()
 
 # Step 5: Print the calculated average GPA
-print('=' * 70)
-print('WEIGHTED AVERAGE GPA CALCULATION')
-print('=' * 70)
-print(f'Total Weighted Score: {np.sum(scores * units)}')
-print(f'Total Units: {np.sum(units)}')
-print(f'Average GPA: {average_gpa:.2f}')
-print('=' * 70)
+print("=" * 70)
+print("WEIGHTED AVERAGE GPA CALCULATION")
+print("=" * 70)
+print(f"Total Weighted Score: {np.sum(scores * units)}")
+print(f"Total Units: {np.sum(units)}")
+print(f"Average GPA: {average_gpa:.2f}")
+print("=" * 70)
 print()
 
 # Step 6: Predict a sample score
 sample_score = 92
 predicted_unit = predict_unit(sample_score)
-print('=' * 70)
-print('PREDICTION FOR SCORE')
-print('=' * 70)
-print(f'Score: {sample_score}')
-print(f'Predicted Unit: {predicted_unit:.4f}')
-print('=' * 70)
+print("=" * 70)
+print("PREDICTION FOR SCORE")
+print("=" * 70)
+print(f"Score: {sample_score}")
+print(f"Predicted Unit: {predicted_unit:.4f}")
+print("=" * 70)
 print()
 
 # Step 5: Visualize the data and polynomial fit
@@ -114,13 +124,23 @@ x_line = np.linspace(scores.min(), scores.max(), 200)
 y_line = predict_unit(x_line)
 
 plt.figure(figsize=(10, 6))
-plt.scatter(scores, units, color='blue', label='Training data', s=80, alpha=0.8)
-plt.plot(x_line, y_line, color='red', linewidth=2, label=f'Polynomial fit (degree {degree})')
-plt.scatter(sample_score, predicted_unit, color='green', s=150, marker='*', label='Sample prediction', zorder=5)
+plt.scatter(scores, units, color="blue", label="Training data", s=80, alpha=0.8)
+plt.plot(
+    x_line, y_line, color="red", linewidth=2, label=f"Polynomial fit (degree {degree})"
+)
+plt.scatter(
+    sample_score,
+    predicted_unit,
+    color="green",
+    s=150,
+    marker="*",
+    label="Sample prediction",
+    zorder=5,
+)
 
-plt.title('Polynomial Regression: Score → Unit')
-plt.xlabel('Score')
-plt.ylabel('Unit')
+plt.title("Polynomial Regression: Score → Unit")
+plt.xlabel("Score")
+plt.ylabel("Unit")
 plt.legend()
 plt.grid(alpha=0.3)
 plt.tight_layout()

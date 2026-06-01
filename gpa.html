@@ -294,7 +294,7 @@
 
       <div class="info-hint">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-        Units (credit hours) let you weight subjects differently. Leave blank to treat all subjects equally.
+        Units (credit hours) let you weight subjects differently. Choose 1 or 2 units for each subject.
       </div>
     </div>
   </div>
@@ -441,7 +441,10 @@
       <select class="name-input"><option value="">— Select subject —</option>${subjectOptions(name)}</select>
       <input type="text" placeholder="${placeholders[mode]}" value="${score}" class="score-input"/>
       <input type="text" placeholder="Auto" class="grade-preview" readonly style="background:var(--light);color:var(--blue);font-weight:600;cursor:default;"/>
-      <input type="number" placeholder="1" min="0.1" step="0.5" value="${units}" class="col-units units-input"/>
+      <select class="col-units units-input">
+        <option value="1" ${units === '' || units === 1 || units === '1' ? 'selected' : ''}>1</option>
+        <option value="2" ${units === 2 || units === '2' ? 'selected' : ''}>2</option>
+      </select>
       <button class="btn-del" onclick="removeRow(${id})" title="Remove">✕</button>
     `;
     document.getElementById('subjectList').appendChild(div);
