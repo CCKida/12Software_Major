@@ -6,11 +6,52 @@ Save the dataset and predictions to CSV files.
 
 import os
 import json
+import sqlite3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
+
+
+def save_reflection_db(df, db_path):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reflect_training (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            score REAL NOT NULL,
+            max_mark REAL NOT NULL,
+            pct_needed REAL NOT NULL
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reflect_predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            score REAL NOT NULL,
+            max_mark REAL NOT NULL,
+            predicted_pct REAL NOT NULL
+        )
+        """
+    )
+    cursor.execute("DELETE FROM reflect_training")
+    cursor.execute("DELETE FROM reflect_predictions")
+
+    for _, row in df.iterrows():
+        cursor.execute(
+            "INSERT INTO reflect_training (score, max_mark, pct_needed) VALUES (?, ?, ?)",
+            (float(row["score"]), float(row["max_mark"]), float(row["pct_needed"])),
+        )
+        cursor.execute(
+            "INSERT INTO reflect_predictions (score, max_mark, predicted_pct) VALUES (?, ?, ?)",
+            (float(row["score"]), float(row["max_mark"]), float(row["predicted_pct"])),
+        )
+
+    conn.commit()
+    conn.close()
 
 
 def load_scores_from_data(csv_path):
@@ -166,6 +207,10 @@ def main():
     pred_out = os.path.join(base_dir, "reflect_predictions.csv")
     df.to_csv(pred_out, index=False)
     print(f"Wrote predictions to: {pred_out}")
+
+    db_path = os.path.join(base_dir, "reflection_data.db")
+    save_reflection_db(df, db_path)
+    print(f"Wrote reflection polynomial regression dataset to: {db_path}")
 
     plot_polynomial_predictions(df, coeffs, base_dir)
 

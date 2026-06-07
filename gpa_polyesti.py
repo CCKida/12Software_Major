@@ -4,6 +4,7 @@
 
 import os
 import json
+import sqlite3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,6 +12,8 @@ import matplotlib.pyplot as plt
 # Step 1: Load historical data from CSV file
 script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, "data.csv")
+gpa_db_path = os.path.join(script_dir, "gpa_data.db")
+
 df = pd.read_csv(csv_path)
 # Trim whitespace from column names in case headers have extra spaces
 df.columns = df.columns.str.strip()
@@ -24,10 +27,46 @@ df = df[["Grade", "Unit"]].copy()
 # Add any logged user GPA data when available
 user_csv_path = os.path.join(script_dir, "user_gpa_data.csv")
 GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
-if os.path.isfile(user_csv_path):
+
+def load_scores_from_db(db_path):
+    extra_rows = []
+    if not os.path.isfile(db_path):
+        return extra_rows
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT subjects FROM gpa_entries")
+        for (subjects,) in cursor.fetchall():
+            if not subjects:
+                continue
+            try:
+                entries = json.loads(subjects)
+            except Exception:
+                continue
+            for item in entries:
+                units = item.get("units")
+                if units is None or pd.isna(units):
+                    continue
+                pct = item.get("pct")
+                grade = item.get("grade")
+                if pct is not None and not pd.isna(pct):
+                    score = float(pct)
+                else:
+                    score = GRADE_TO_PCT.get(str(grade).upper())
+                if score is None:
+                    continue
+                extra_rows.append({"Grade": score, "Unit": units})
+        conn.close()
+    except Exception:
+        pass
+    return extra_rows
+
+if os.path.isfile(gpa_db_path):
+    extra_rows = load_scores_from_db(gpa_db_path)
+elif os.path.isfile(user_csv_path):
+    extra_rows = []
     try:
         user_df = pd.read_csv(user_csv_path)
-        extra_rows = []
         for _, row in user_df.iterrows():
             subjects = row.get("subjects")
             if not subjects or pd.isna(subjects):
@@ -42,24 +81,20 @@ if os.path.isfile(user_csv_path):
                     continue
                 pct = item.get("pct")
                 grade = item.get("grade")
-                if (
-                    pct is not None
-                    and isinstance(pct, (int, float))
-                    and not np.isnan(pct)
-                ):
-                    grade_value = pct
+                if pct is not None and not pd.isna(pct):
+                    score = float(pct)
                 else:
-                    grade_value = GRADE_TO_PCT.get(str(grade).upper())
-                if grade_value is None:
+                    score = GRADE_TO_PCT.get(str(grade).upper())
+                if score is None:
                     continue
-                extra_rows.append({"Grade": grade_value, "Unit": units})
-        if extra_rows:
-            df = pd.concat([df, pd.DataFrame(extra_rows)], ignore_index=True)
-            print(
-                f"Loaded {len(extra_rows)} additional training rows from user_gpa_data.csv"
-            )
+                extra_rows.append({"Grade": score, "Unit": units})
     except Exception as e:
         print(f"Unable to load user_gpa_data.csv: {e}")
+else:
+    extra_rows = []
+
+if extra_rows:
+    df = pd.concat([df, pd.DataFrame(extra_rows)], ignore_index=True)
 
 scores = df["Grade"].values
 units = df["Unit"].values

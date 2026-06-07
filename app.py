@@ -20,14 +20,93 @@ from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 import pandas as pd
 import csv
+import sqlite3
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# Load data from CSV for polynomial regression
+# Load data from CSV and SQLite for polynomial regression
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(script_dir, "data.csv")
 user_data_path = os.path.join(script_dir, "user_gpa_data.csv")
+gpa_db_path = os.path.join(script_dir, "gpa_data.db")
+reflect_db_path = os.path.join(script_dir, "reflection_data.db")
 GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
+
+
+def get_db_connection(db_path):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_gpa_database():
+    conn = get_db_connection(gpa_db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS gpa_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            gpa REAL,
+            num_subjects INTEGER,
+            subjects TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    if cursor.execute("SELECT COUNT(*) FROM gpa_entries").fetchone()[0] == 0:
+        migrate_user_csv_to_db(conn)
+    conn.close()
+
+
+def migrate_user_csv_to_db(conn):
+    if not os.path.isfile(user_data_path):
+        return
+    cursor = conn.cursor()
+    try:
+        with open(user_data_path, newline="", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                subjects = row.get("subjects")
+                if not subjects:
+                    continue
+                timestamp = row.get("timestamp") or datetime.datetime.now().isoformat()
+                gpa = float(row["gpa"]) if row.get("gpa") else None
+                num_subjects = int(row["num_subjects"]) if row.get("num_subjects") else None
+                cursor.execute(
+                    "INSERT INTO gpa_entries (timestamp, gpa, num_subjects, subjects) VALUES (?, ?, ?, ?)",
+                    (timestamp, gpa, num_subjects, subjects),
+                )
+        conn.commit()
+    except Exception:
+        pass
+
+
+def init_reflection_database():
+    conn = get_db_connection(reflect_db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reflect_predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            score REAL NOT NULL,
+            max_mark REAL NOT NULL,
+            predicted_pct REAL NOT NULL
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reflect_training (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            score REAL NOT NULL,
+            max_mark REAL NOT NULL,
+            pct_needed REAL NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
 
 
 def load_training_data():
@@ -36,10 +115,43 @@ def load_training_data():
         raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
     data = data[["Grade", "Unit"]].copy()
 
-    if os.path.isfile(user_data_path):
+    extra_rows = []
+    if os.path.isfile(gpa_db_path):
+        try:
+            conn = get_db_connection(gpa_db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT subjects FROM gpa_entries")
+            for row in cursor.fetchall():
+                subjects = row["subjects"]
+                if not subjects:
+                    continue
+                try:
+                    entries = json.loads(subjects)
+                except Exception:
+                    continue
+                for item in entries:
+                    units = item.get("units")
+                    if units is None or pd.isna(units):
+                        continue
+                    pct = item.get("pct")
+                    grade = item.get("grade")
+                    if (
+                        pct is not None
+                        and isinstance(pct, (int, float))
+                        and not np.isnan(pct)
+                    ):
+                        grade_value = pct
+                    else:
+                        grade_value = GRADE_TO_PCT.get(str(grade).upper())
+                    if grade_value is None:
+                        continue
+                    extra_rows.append({"Grade": grade_value, "Unit": units})
+            conn.close()
+        except Exception:
+            pass
+    elif os.path.isfile(user_data_path):
         try:
             user_df = pd.read_csv(user_data_path)
-            extra_rows = []
             for _, row in user_df.iterrows():
                 subjects = row.get("subjects")
                 if not subjects or pd.isna(subjects):
@@ -65,11 +177,12 @@ def load_training_data():
                     if grade_value is None:
                         continue
                     extra_rows.append({"Grade": grade_value, "Unit": units})
-            if extra_rows:
-                user_data = pd.DataFrame(extra_rows)
-                data = pd.concat([data, user_data], ignore_index=True)
         except Exception:
             pass
+
+    if extra_rows:
+        user_data = pd.DataFrame(extra_rows)
+        data = pd.concat([data, user_data], ignore_index=True)
 
     return data
 
@@ -85,6 +198,8 @@ def retrain_model():
     model.fit(X_poly, y)
 
 
+init_gpa_database()
+init_reflection_database()
 retrain_model()
 
 
@@ -188,24 +303,39 @@ def log_gpa():
     timestamp = datetime.datetime.now().isoformat()
 
     # Prepare CSV row
-    row = {
-        "timestamp": timestamp,
-        "gpa": gpa,
-        "num_subjects": len(subjects),
-        "subjects": json.dumps(subjects),  # Store as JSON string
-    }
-
-    file_exists = os.path.isfile(user_data_path)
-
-    with open(user_data_path, "a", newline="", encoding="utf-8") as csvfile:
-        fieldnames = ["timestamp", "gpa", "num_subjects", "subjects"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row)
+    subjects_json = json.dumps(subjects)
+    conn = get_db_connection(gpa_db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO gpa_entries (timestamp, gpa, num_subjects, subjects) VALUES (?, ?, ?, ?)",
+        (timestamp, gpa, len(subjects), subjects_json),
+    )
+    conn.commit()
+    conn.close()
 
     retrain_model()
     return jsonify({"status": "logged"}), 200
+
+
+@app.route("/reflect_predictions.csv")
+def reflect_predictions_csv():
+    if os.path.isfile(reflect_db_path):
+        conn = get_db_connection(reflect_db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT score, max_mark, predicted_pct FROM reflect_predictions")
+        rows = cursor.fetchall()
+        conn.close()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["score", "max_mark", "predicted_pct"])
+        writer.writerows(rows)
+        return Response(output.getvalue(), mimetype="text/csv")
+
+    if os.path.isfile(os.path.join(script_dir, "reflect_predictions.csv")):
+        return send_from_directory(script_dir, "reflect_predictions.csv")
+
+    return Response("score,max_mark,predicted_pct\n", mimetype="text/csv")
 
 
 # ── Run ──────────────────────────────────────────────────────────────────────
