@@ -8,6 +8,8 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
 
 # Step 1: Load historical data from CSV file
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -114,7 +116,17 @@ average_gpa = calculate_weighted_average(scores, units)
 # Step 3: Fit a polynomial model using NumPy
 # degree = 2 means y = a*x^2 + b*x + c
 degree = 2
-coeffs = np.polyfit(scores, units, degree)
+
+X = scores.reshape(-1, 1)
+y = units
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+coeffs = np.polyfit(X_train.flatten(), y_train, degree)
+
+predicted_test = np.polyval(coeffs, X_test.flatten())
+r2 = r2_score(y_test, predicted_test)
+test_accuracy = r2 * 100
 
 
 # Helper to predict unit from score
@@ -130,6 +142,8 @@ print(f"Coefficients: {coeffs}")
 print("Equation:")
 print(f"Unit = {coeffs[0]:.6f}×x² + {coeffs[1]:.6f}×x + {coeffs[2]:.6f}")
 print("where x = score")
+print(f"Test R² score: {r2:.4f}")
+print(f"Equivalent explained variance: {test_accuracy:.2f}%")
 print("=" * 70)
 print()
 
