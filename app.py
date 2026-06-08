@@ -31,6 +31,20 @@ user_data_path = os.path.join(script_dir, "user_gpa_data.csv")
 gpa_db_path = os.path.join(script_dir, "gpa_data.db")
 reflect_db_path = os.path.join(script_dir, "reflection_data.db")
 GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
+DIFFICULTY_TO_VALUE = {"Easy": 1, "Medium": 2, "Hard": 3}
+DEFAULT_DIFFICULTY = "Medium"
+average_grade = 0.0
+
+
+def normalize_difficulty(value):
+    if value is None or pd.isna(value):
+        return DEFAULT_DIFFICULTY
+    normalized = str(value).strip().title()
+    return normalized if normalized in DIFFICULTY_TO_VALUE else DEFAULT_DIFFICULTY
+
+
+def difficulty_value(value):
+    return DIFFICULTY_TO_VALUE.get(normalize_difficulty(value), DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY])
 
 
 def get_db_connection(db_path):
@@ -113,7 +127,20 @@ def load_training_data():
     data = pd.read_csv(data_path)
     if "Grade" not in data.columns or "Unit" not in data.columns:
         raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
-    data = data[["Grade", "Unit"]].copy()
+    if "Difficulty" not in data.columns:
+        data["Difficulty"] = DEFAULT_DIFFICULTY
+    else:
+        data["Difficulty"] = (
+            data["Difficulty"]
+            .fillna(DEFAULT_DIFFICULTY)
+            .astype(str)
+            .str.strip()
+            .str.title()
+        )
+        data.loc[~data["Difficulty"].isin(DIFFICULTY_TO_VALUE), "Difficulty"] = DEFAULT_DIFFICULTY
+
+    data = data[["Grade", "Unit", "Difficulty"]].copy()
+    data["DifficultyValue"] = data["Difficulty"].map(DIFFICULTY_TO_VALUE)
 
     extra_rows = []
     if os.path.isfile(gpa_db_path):
@@ -145,7 +172,14 @@ def load_training_data():
                         grade_value = GRADE_TO_PCT.get(str(grade).upper())
                     if grade_value is None:
                         continue
-                    extra_rows.append({"Grade": grade_value, "Unit": units})
+                    difficulty = item.get("difficulty")
+                    extra_rows.append(
+                        {
+                            "Grade": grade_value,
+                            "Unit": units,
+                            "Difficulty": normalize_difficulty(difficulty),
+                        }
+                    )
             conn.close()
         except Exception:
             pass
@@ -176,7 +210,14 @@ def load_training_data():
                         grade_value = GRADE_TO_PCT.get(str(grade).upper())
                     if grade_value is None:
                         continue
-                    extra_rows.append({"Grade": grade_value, "Unit": units})
+                    difficulty = item.get("difficulty")
+                    extra_rows.append(
+                        {
+                            "Grade": grade_value,
+                            "Unit": units,
+                            "Difficulty": normalize_difficulty(difficulty),
+                        }
+                    )
         except Exception:
             pass
 
@@ -184,15 +225,23 @@ def load_training_data():
         user_data = pd.DataFrame(extra_rows)
         data = pd.concat([data, user_data], ignore_index=True)
 
+    data["Difficulty"] = (
+        data["Difficulty"].fillna(DEFAULT_DIFFICULTY).astype(str).str.strip().str.title()
+    )
+    data.loc[~data["Difficulty"].isin(DIFFICULTY_TO_VALUE), "Difficulty"] = DEFAULT_DIFFICULTY
+    data["DifficultyValue"] = data["Difficulty"].map(DIFFICULTY_TO_VALUE)
+    data["GradeAboveAverage"] = data["Grade"] - data["Grade"].mean()
+
     return data
 
 
 def retrain_model():
-    global data, X, y, poly, model
+    global data, X, y, poly, model, average_grade
     data = load_training_data()
-    X = data[["Grade"]].values
+    average_grade = data["Grade"].mean()
+    X = data[["Grade", "DifficultyValue", "GradeAboveAverage"]].values
     y = data["Unit"].values
-    poly = PolynomialFeatures(degree=2)
+    poly = PolynomialFeatures(degree=2, include_bias=False)
     X_poly = poly.fit_transform(X)
     model = LinearRegression()
     model.fit(X_poly, y)
@@ -220,19 +269,22 @@ def admin():
 def admin_plot(chart_name):
     if chart_name == "score-vs-gpa":
         fig, ax = plt.subplots(figsize=(8, 5))
-        ax.scatter(X.flatten(), y, color="#2d5be3", edgecolor="k", s=75, alpha=0.9)
+        ax.scatter(X[:, 0], y, color="#2d5be3", edgecolor="k", s=75, alpha=0.9)
         ax.set_title("Training data: Grade vs Unit")
         ax.set_xlabel("Grade")
         ax.set_ylabel("Unit")
         ax.grid(True, alpha=0.25)
-        ax.set_xlim(X.min() - 1, X.max() + 1)
+        ax.set_xlim(X[:, 0].min() - 1, X[:, 0].max() + 1)
         ax.set_ylim(min(y.min() - 0.5, 0), y.max() + 0.5)
     elif chart_name == "polynomial-fit":
-        x_line = np.linspace(X.min(), X.max(), 200).reshape(-1, 1)
-        y_line = model.predict(poly.transform(x_line))
+        x_line = np.linspace(X[:, 0].min(), X[:, 0].max(), 200).reshape(-1, 1)
+        difficulty_line = np.full((x_line.shape[0], 1), DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY])
+        grade_above_avg_line = x_line - average_grade
+        x_line_features = np.hstack([x_line, difficulty_line, grade_above_avg_line])
+        y_line = model.predict(poly.transform(x_line_features))
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.scatter(
-            X.flatten(),
+            X[:, 0],
             y,
             color="#2d5be3",
             edgecolor="k",
@@ -287,9 +339,16 @@ def predict():
     grade = request.args.get("grade", type=float)
     if grade is None:
         return "Please provide a grade parameter, e.g. /predict?grade=85"
-    grade_poly = poly.transform([[grade]])
-    predicted_unit = model.predict(grade_poly)[0]
-    return f"Predicted Unit for Grade {grade}: {predicted_unit:.2f}"
+    difficulty = request.args.get("difficulty", default=DEFAULT_DIFFICULTY, type=str)
+    difficulty_val = difficulty_value(difficulty)
+    grade_above_average = grade - average_grade
+    prediction_features = [[grade, difficulty_val, grade_above_average]]
+    predicted_unit = model.predict(poly.transform(prediction_features))[0]
+    return (
+        f"Predicted Unit for Grade {grade} "
+        f"(difficulty={normalize_difficulty(difficulty)}, "
+        f"aboveAvg={grade_above_average:.2f}): {predicted_unit:.2f}"
+    )
 
 
 @app.route("/log_gpa", methods=["POST"])

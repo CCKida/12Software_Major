@@ -1,15 +1,25 @@
-Subject_Type,Grade,Unit
-Math,92,2
-Science,85,1
-English,78,2
-Visual Arts,88,1
-History,80,1
-Ancient History,82,2
-Modern History,79,2
-Geography,90,2
-Physical Education,95,2
-Music,87,1
-Drama,83,2
-Computer Science,91,2
-Economics,84,1
-Psychology,86,1
+Subject_Type,Grade,Unit,Difficulty
+Mathematics,92,2,Hard
+Mathematics Extension 1,81,2,Hard
+Biology,85,2,Hard
+Chemistry,88,2,Hard
+Physics,82,2,Hard
+English,78,2,Medium
+English Advanced,88,2,Medium
+Visual Arts,88,1,Easy
+Music,87,1,Easy
+Drama,83,2,Medium
+History,80,1,Medium
+Ancient History,82,2,Medium
+Modern History,79,2,Medium
+Geography,90,2,Medium
+Design and Technology,85,1,Medium
+Software Engineering,91,2,Hard
+Industrial Technology Multimedia,80,1,Hard
+Industrial Technology Timber,78,1,Hard
+Economics,84,1,Medium
+PDHPE,95,2,Easy
+Business Studies,89,1,Medium
+Community and Family Studies,68,1,Medium
+Legal Studies,87,1,Medium
+Language,90,2,Medium

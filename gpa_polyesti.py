@@ -1,196 +1,56 @@
-# Year 12 Software Automation: Polynomial Regression Estimator
-# This script loads the CSV dataset and fits a polynomial model to predict unit values from score values.
-# It also calculates the weighted average GPA based on units and scores.
+"""
+Average Calculator (Weighted) for NSW Years 7-12
+
+This script computes the weighted average of scores using the corresponding
+weights (units/credits) from `data.csv`. It's a simplified replacement of
+the previous polynomial/GPA estimator and prints the total weighted score,
+total weight and the weighted average (percentage).
+
+Expect `data.csv` to contain at least the columns `Grade` and `Unit`.
+"""
 
 import os
-import json
-import sqlite3
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
 
-# Step 1: Load historical data from CSV file
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, "data.csv")
-gpa_db_path = os.path.join(script_dir, "gpa_data.db")
-
-df = pd.read_csv(csv_path)
-# Trim whitespace from column names in case headers have extra spaces
-df.columns = df.columns.str.strip()
-
-# Check for correct column names
-if "Grade" not in df.columns or "Unit" not in df.columns:
-    raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
-
-df = df[["Grade", "Unit"]].copy()
-
-# Add any logged user GPA data when available
-user_csv_path = os.path.join(script_dir, "user_gpa_data.csv")
-GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
-
-def load_scores_from_db(db_path):
-    extra_rows = []
-    if not os.path.isfile(db_path):
-        return extra_rows
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT subjects FROM gpa_entries")
-        for (subjects,) in cursor.fetchall():
-            if not subjects:
-                continue
-            try:
-                entries = json.loads(subjects)
-            except Exception:
-                continue
-            for item in entries:
-                units = item.get("units")
-                if units is None or pd.isna(units):
-                    continue
-                pct = item.get("pct")
-                grade = item.get("grade")
-                if pct is not None and not pd.isna(pct):
-                    score = float(pct)
-                else:
-                    score = GRADE_TO_PCT.get(str(grade).upper())
-                if score is None:
-                    continue
-                extra_rows.append({"Grade": score, "Unit": units})
-        conn.close()
-    except Exception:
-        pass
-    return extra_rows
-
-if os.path.isfile(gpa_db_path):
-    extra_rows = load_scores_from_db(gpa_db_path)
-elif os.path.isfile(user_csv_path):
-    extra_rows = []
-    try:
-        user_df = pd.read_csv(user_csv_path)
-        for _, row in user_df.iterrows():
-            subjects = row.get("subjects")
-            if not subjects or pd.isna(subjects):
-                continue
-            try:
-                entries = json.loads(subjects)
-            except Exception:
-                continue
-            for item in entries:
-                units = item.get("units")
-                if units is None or pd.isna(units):
-                    continue
-                pct = item.get("pct")
-                grade = item.get("grade")
-                if pct is not None and not pd.isna(pct):
-                    score = float(pct)
-                else:
-                    score = GRADE_TO_PCT.get(str(grade).upper())
-                if score is None:
-                    continue
-                extra_rows.append({"Grade": score, "Unit": units})
-    except Exception as e:
-        print(f"Unable to load user_gpa_data.csv: {e}")
-else:
-    extra_rows = []
-
-if extra_rows:
-    df = pd.concat([df, pd.DataFrame(extra_rows)], ignore_index=True)
-
-scores = df["Grade"].values
-units = df["Unit"].values
 
 
-# Step 2: Calculate the weighted average GPA
-def calculate_weighted_average(scores, units):
-    total_weighted_score = np.sum(scores * units)
-    total_units = np.sum(units)
-    if total_units == 0:
-        return 0
-    return total_weighted_score / total_units
+def load_data(path):
+    df = pd.read_csv(path)
+    df.columns = df.columns.str.strip()
+    if "Grade" not in df.columns or "Unit" not in df.columns:
+        raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
+    return df[["Grade", "Unit"]].copy()
 
 
-average_gpa = calculate_weighted_average(scores, units)
-
-# Step 3: Fit a polynomial model using NumPy
-# degree = 2 means y = a*x^2 + b*x + c
-degree = 2
-
-X = scores.reshape(-1, 1)
-y = units
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-coeffs = np.polyfit(X_train.flatten(), y_train, degree)
-
-predicted_test = np.polyval(coeffs, X_test.flatten())
-r2 = r2_score(y_test, predicted_test)
-test_accuracy = r2 * 100
+def weighted_average(grades, weights):
+    grades = np.asarray(grades, dtype=float)
+    weights = np.asarray(weights, dtype=float)
+    total_weight = np.sum(weights)
+    if total_weight == 0:
+        return float("nan"), 0.0, 0.0
+    total_weighted = np.sum(grades * weights)
+    return total_weighted / total_weight, total_weighted, total_weight
 
 
-# Helper to predict unit from score
-def predict_unit(score_value):
-    return np.polyval(coeffs, score_value)
+def main():
+    df = load_data(csv_path)
+    avg, total_weighted, total_weight = weighted_average(df["Grade"].values, df["Unit"].values)
+
+    print("=" * 60)
+    print("SIMPLE WEIGHTED AVERAGE CALCULATOR")
+    print("=" * 60)
+    print(f"Total Weighted Score: {total_weighted}")
+    print(f"Total Weight (units): {total_weight}")
+    if np.isnan(avg):
+        print("Weighted average: undefined (total weight is zero)")
+    else:
+        print(f"Weighted average: {avg:.2f}")
+    print("=" * 60)
 
 
-# Step 4: Print the fitted polynomial equation
-print("=" * 70)
-print("POLYNOMIAL REGRESSION MODEL (Degree 2)")
-print("=" * 70)
-print(f"Coefficients: {coeffs}")
-print("Equation:")
-print(f"Unit = {coeffs[0]:.6f}×x² + {coeffs[1]:.6f}×x + {coeffs[2]:.6f}")
-print("where x = score")
-print(f"Test R² score: {r2:.4f}")
-print(f"Equivalent explained variance: {test_accuracy:.2f}%")
-print("=" * 70)
-print()
-
-# Step 5: Print the calculated average GPA
-print("=" * 70)
-print("WEIGHTED AVERAGE GPA CALCULATION")
-print("=" * 70)
-print(f"Total Weighted Score: {np.sum(scores * units)}")
-print(f"Total Units: {np.sum(units)}")
-print(f"Average GPA: {average_gpa:.2f}")
-print("=" * 70)
-print()
-
-# Step 6: Predict a sample score
-sample_score = 92
-predicted_unit = predict_unit(sample_score)
-print("=" * 70)
-print("PREDICTION FOR SCORE")
-print("=" * 70)
-print(f"Score: {sample_score}")
-print(f"Predicted Unit: {predicted_unit:.4f}")
-print("=" * 70)
-print()
-
-# Step 5: Visualize the data and polynomial fit
-x_line = np.linspace(scores.min(), scores.max(), 200)
-y_line = predict_unit(x_line)
-
-plt.figure(figsize=(10, 6))
-plt.scatter(scores, units, color="blue", label="Training data", s=80, alpha=0.8)
-plt.plot(
-    x_line, y_line, color="red", linewidth=2, label=f"Polynomial fit (degree {degree})"
-)
-plt.scatter(
-    sample_score,
-    predicted_unit,
-    color="green",
-    s=150,
-    marker="*",
-    label="Sample prediction",
-    zorder=5,
-)
-
-plt.title("Polynomial Regression: Score → Unit")
-plt.xlabel("Score")
-plt.ylabel("Unit")
-plt.legend()
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
+if __name__ == '__main__':
+    main()
