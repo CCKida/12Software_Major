@@ -157,9 +157,10 @@ def load_training_data():
                 except Exception:
                     continue
                 for item in entries:
+                    difficulty = normalize_difficulty(item.get("difficulty"))
                     units = item.get("units")
                     if units is None or pd.isna(units):
-                        continue
+                        units = difficulty_value(difficulty)
                     pct = item.get("pct")
                     grade = item.get("grade")
                     if (
@@ -172,12 +173,11 @@ def load_training_data():
                         grade_value = GRADE_TO_PCT.get(str(grade).upper())
                     if grade_value is None:
                         continue
-                    difficulty = item.get("difficulty")
                     extra_rows.append(
                         {
                             "Grade": grade_value,
                             "Unit": units,
-                            "Difficulty": normalize_difficulty(difficulty),
+                            "Difficulty": difficulty,
                         }
                     )
             conn.close()
@@ -195,9 +195,10 @@ def load_training_data():
                 except Exception:
                     continue
                 for item in entries:
+                    difficulty = normalize_difficulty(item.get("difficulty"))
                     units = item.get("units")
                     if units is None or pd.isna(units):
-                        continue
+                        units = difficulty_value(difficulty)
                     pct = item.get("pct")
                     grade = item.get("grade")
                     if (
@@ -210,12 +211,11 @@ def load_training_data():
                         grade_value = GRADE_TO_PCT.get(str(grade).upper())
                     if grade_value is None:
                         continue
-                    difficulty = item.get("difficulty")
                     extra_rows.append(
                         {
                             "Grade": grade_value,
                             "Unit": units,
-                            "Difficulty": normalize_difficulty(difficulty),
+                            "Difficulty": difficulty,
                         }
                     )
         except Exception:

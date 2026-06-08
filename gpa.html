@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scorely – GPA Calculator</title>
+  <title>Scorely – Difficulty-weighted Average</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -227,7 +227,7 @@
     <li><a href="/">Home</a></li>
     <li><a href="/reflect">Reflection</a></li>
     <li><a href="/admin">Admin</a></li>
-    <li><a href="/gpa" class="active nav-cta">GPA Calculator</a></li>
+    <li><a href="/gpa" class="active nav-cta">Average Calculator</a></li>
   </ul>
 </nav>
 
@@ -236,10 +236,10 @@
     <div class="breadcrumb">
       <a href="index.html">Home</a>
       <span>›</span>
-      <span class="cur">GPA Calculator</span>
+      <span class="cur">Difficulty-weighted Average</span>
     </div>
-    <h1>GPA Calculator</h1>
-    <p>Add 5 to 10 subjects and scores — Scorely will instantly calculate your GPA, weighted average, and grade breakdown.</p>
+    <h1>Difficulty-weighted Average</h1>
+    <p>Enter your subjects with difficulty levels, and Scorely will calculate a difficulty-weighted average that better reflects NSW assessment weighting.</p>
   </div>
 </div>
 
@@ -254,13 +254,13 @@
         <button class="mode-tab active" onclick="setMode('percent', this)">% Score</button>
         <button class="mode-tab" onclick="setMode('letter', this)">Grade (A–E)</button>
       </div>
-      <p style="color:var(--slate);font-size:.9rem;margin-bottom:1rem;">Enter between 5 and 10 subjects from your report card to calculate your average. 1 Unit is equal to 50% of a full subject, while 2 units is equal to 100% of a full subject.</p>
+      <p style="color:var(--slate);font-size:.9rem;margin-bottom:1rem;">Enter between 5 and 10 subjects from your report card. Each subject is weighted by difficulty rather than units, using Easy = 1, Medium = 2, Hard = 3.</p>
 
       <div class="table-header">
         <span>Subject</span>
         <span id="colScoreLabel">Score (%)</span>
         <span>Grade</span>
-        <span class="col-units">Units</span>
+        <span class="col-units">Difficulty</span>
         <span></span>
       </div>
 
@@ -273,7 +273,7 @@
       <p class="limit-note">Max 10 subjects can be added.</p>
 
       <div class="calc-row">
-        <button class="btn-calc" onclick="calculate()">Calculate GPA</button>
+        <button class="btn-calc" onclick="calculate()">Calculate Average</button>
         <button class="btn-clear" onclick="clearAll()">Clear all</button>
       </div>
 
@@ -306,7 +306,7 @@
     <div class="card dial-card" id="dialCard">
       <div class="empty-state" id="dialEmpty">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <p>Add subjects and hit <strong>Calculate GPA</strong> to see your result</p>
+        <p>Add subjects and hit <strong>Calculate Average</strong> to see your result</p>
       </div>
       <div id="dialResult" style="display:none;">
         <div class="dial-wrap">
@@ -316,7 +316,7 @@
           </svg>
           <div class="dial-center">
             <div class="dial-gpa" id="dialGpa">–</div>
-            <div class="dial-label">GPA</div>
+            <div class="dial-label">AVG</div>
           </div>
         </div>
         <div class="dial-class" id="dialClass"></div>
@@ -422,7 +422,7 @@
     return { label: '⚠️ Limited (E)', color: '#6b7280' };
   }
 
-  function addRow(name='', score='', units='') {
+  function addRow(name='', score='', difficulty='Medium') {
     const currentRows = document.querySelectorAll('.subject-row').length;
     if (currentRows >= MAX_SUBJECTS) {
       alert(`You can add a maximum of ${MAX_SUBJECTS} subjects.`);
@@ -441,9 +441,10 @@
       <select class="name-input"><option value="">— Select subject —</option>${subjectOptions(name)}</select>
       <input type="text" placeholder="${placeholders[mode]}" value="${score}" class="score-input"/>
       <input type="text" placeholder="Auto" class="grade-preview" readonly style="background:var(--light);color:var(--blue);font-weight:600;cursor:default;"/>
-      <select class="col-units units-input">
-        <option value="1" ${units === '' || units === 1 || units === '1' ? 'selected' : ''}>1</option>
-        <option value="2" ${units === 2 || units === '2' ? 'selected' : ''}>2</option>
+      <select class="col-units difficulty-input">
+        <option value="Easy" ${difficulty === 'Easy' ? 'selected' : ''}>Easy</option>
+        <option value="Medium" ${difficulty === '' || difficulty === 'Medium' ? 'selected' : ''}>Medium</option>
+        <option value="Hard" ${difficulty === 'Hard' ? 'selected' : ''}>Hard</option>
       </select>
       <button class="btn-del" onclick="removeRow(${id})" title="Remove">✕</button>
     `;
@@ -515,11 +516,11 @@
     const rows = document.querySelectorAll('.subject-row');
     if (!rows.length) return;
     if (rows.length < MIN_SUBJECTS) {
-      alert(`Please enter at least ${MIN_SUBJECTS} subjects to calculate GPA.`);
+      alert(`Please enter at least ${MIN_SUBJECTS} subjects to calculate your difficulty-weighted average.`);
       return;
     }
     if (rows.length > MAX_SUBJECTS) {
-      alert(`Please enter no more than ${MAX_SUBJECTS} subjects to calculate Average/GPA.`);
+      alert(`Please enter no more than ${MAX_SUBJECTS} subjects to calculate your difficulty-weighted average.`);
       return;
     }
 
@@ -529,11 +530,12 @@
     rows.forEach(row => {
       const nameEl  = row.querySelector('.name-input');
       const scoreEl = row.querySelector('.score-input');
-      const unitsEl = row.querySelector('.units-input');
+      const difficultyEl = row.querySelector('.difficulty-input');
 
       const name  = nameEl.value.trim() || 'Unnamed';
       const scoreVal = scoreEl.value.trim();
-      const units = parseFloat(unitsEl.value) || 1;
+      const difficulty = difficultyEl.value || 'Medium';
+      const difficultyWeight = difficulty === 'Hard' ? 3 : difficulty === 'Easy' ? 1 : 2;
 
       if (!scoreVal) { scoreEl.classList.add('error'); valid = false; return; }
       scoreEl.classList.remove('error');
@@ -542,23 +544,23 @@
       if (!parsed) { scoreEl.classList.add('error'); valid = false; return; }
       scoreEl.classList.remove('error');
 
-      subjects.push({ name, ...parsed, units });
+      subjects.push({ name, ...parsed, difficulty, difficultyWeight, units: difficultyWeight });
     });
 
     if (!valid || !subjects.length) return;
 
-    // Calculate weighted GPA
-    let totalPoints = 0, totalUnits = 0;
-    subjects.forEach(s => { totalPoints += s.points * s.units; totalUnits += s.units; });
-    const gpa = totalPoints / totalUnits;
+    // Calculate difficulty-weighted average
+    let totalPoints = 0, totalWeights = 0;
+    subjects.forEach(s => { totalPoints += s.points * s.difficultyWeight; totalWeights += s.difficultyWeight; });
+    const gpa = totalPoints / totalWeights;
 
-    // Calculate weighted average % (where available)
+    // Calculate difficulty-weighted average % (where available)
     const scoredSubjs = subjects.filter(s => s.pct !== null);
     let avgPct = null;
     if (scoredSubjs.length) {
-      const wSum = scoredSubjs.reduce((a, s) => a + s.pct * s.units, 0);
-      const wUnits = scoredSubjs.reduce((a, s) => a + s.units, 0);
-      avgPct = wSum / wUnits;
+      const wSum = scoredSubjs.reduce((a, s) => a + s.pct * s.difficultyWeight, 0);
+      const wWeight = scoredSubjs.reduce((a, s) => a + s.difficultyWeight, 0);
+      avgPct = wSum / wWeight;
     }
 
     const cls = classify(gpa);
@@ -569,7 +571,7 @@
     document.getElementById('dialGpa').textContent = gpa.toFixed(2);
     document.getElementById('dialClass').style.color = cls.color;
     document.getElementById('dialClass').textContent = cls.label;
-    document.getElementById('dialSub').textContent = `${subjects.length} subject${subjects.length > 1 ? 's' : ''} · ${totalUnits} unit${totalUnits !== 1 ? 's' : ''}`;
+    document.getElementById('dialSub').textContent = `${subjects.length} subject${subjects.length > 1 ? 's' : ''} · difficulty weight ${totalWeights}`;
 
     // Animate arc: circumference = 2π × 65 ≈ 408.4
     const circ = 408.4;
@@ -583,8 +585,8 @@
     const lowest  = subjects.reduce((a, b) => b.points < a.points ? b : a);
     document.getElementById('statsCard').style.display = 'block';
     document.getElementById('statsStrip').innerHTML = `
-      <div class="stat-box"><div class="stat-val">${gpa.toFixed(2)}</div><div class="stat-lbl">Weighted GPA</div></div>
-      <div class="stat-box"><div class="stat-val">${avgPct !== null ? avgPct.toFixed(1)+'%' : '–'}</div><div class="stat-lbl">Avg Score</div></div>
+      <div class="stat-box"><div class="stat-val">${gpa.toFixed(2)}</div><div class="stat-lbl">Difficulty-weighted average</div></div>
+      <div class="stat-box"><div class="stat-val">${avgPct !== null ? avgPct.toFixed(1)+'%' : '–'}</div><div class="stat-lbl">Difficulty-weighted avg</div></div>
       <div class="stat-box" style="border:1px solid rgba(34,197,94,.25);background:#f0fdf4;"><div class="stat-val" style="color:var(--green);">${highest.grade}</div><div class="stat-lbl">Best: ${highest.name}</div></div>
       <div class="stat-box" style="border:1px solid rgba(239,68,68,.2);background:#fff5f5;"><div class="stat-val" style="color:var(--red);">${lowest.grade}</div><div class="stat-lbl">Lowest: ${lowest.name}</div></div>
     `;
@@ -631,11 +633,11 @@
   }
 
   // Init with minimum required rows
-  addRow('Mathematics', '', '');
-  addRow('English', '', '');
-  addRow('Science', '', '');
-  addRow('History', '', '');
-  addRow('Biology', '', '');
+  addRow('Mathematics', '', 'Medium');
+  addRow('English', '', 'Medium');
+  addRow('Science', '', 'Medium');
+  addRow('History', '', 'Medium');
+  addRow('Biology', '', 'Medium');
 </script>
 </body>
 </html>
