@@ -225,9 +225,9 @@
   <a href="/" class="logo">Score<span>ly</span></a>
   <ul>
     <li><a href="/">Home</a></li>
-    <li><a href="/reflect">Reflection</a></li>
+    <li><a href="/reflect">Reflection Form</a></li>
     <li><a href="/admin">Admin</a></li>
-    <li><a href="/gpa" class="active nav-cta">Average Calculator</a></li>
+    <li><a href="/avg" class="active nav-cta">Average Calculator</a></li>
   </ul>
 </nav>
 
@@ -236,10 +236,10 @@
     <div class="breadcrumb">
       <a href="index.html">Home</a>
       <span>›</span>
-      <span class="cur">Difficulty-weighted Average</span>
+      <span class="cur">Calculate your average</span>
     </div>
-    <h1>Difficulty-weighted Average</h1>
-    <p>Enter your subjects with difficulty levels, and Scorely will calculate a difficulty-weighted average that better reflects NSW assessment weighting.</p>
+    <h1>Calculate your average</h1>
+    <p>Enter your subjects with difficulty levels, and Scorely will calculate the average that reflects NSW subject weighting.</p>
   </div>
 </div>
 
@@ -254,8 +254,8 @@
         <button class="mode-tab active" onclick="setMode('percent', this)">% Score</button>
         <button class="mode-tab" onclick="setMode('letter', this)">Grade (A–E)</button>
       </div>
-      <p style="color:var(--slate);font-size:.9rem;margin-bottom:1rem;">Enter between 5 and 10 subjects from your report card. Each subject is weighted by difficulty rather than units, using Easy = 1, Medium = 2, Hard = 3.</p>
-
+      <p style="color:var(--slate);font-size:.9rem;margin-bottom:1rem;">Enter between 5 and 10 subjects and grades from your report card. Each subject is weighted by difficulty based on the NSW Education Standards Authority (NESA) description.</p>
+      <p style="color:var(--slate);font-size:.9rem;margin-bottom:1rem;">Note: Calculation is based on collected user-based inputs.</p>
       <div class="table-header">
         <span>Subject</span>
         <span id="colScoreLabel">Score (%)</span>
@@ -291,11 +291,6 @@
         </table>
         <p style="font-size:.74rem;color:var(--slate);margin-top:.6rem;line-height:1.5;">Based on the NSW Education Standards Authority (NESA) Performance Band descriptors for Stage 5 &amp; Stage 6.</p>
       </details>
-
-      <div class="info-hint">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-        Units let you weight subjects differently. Choose 1 or 2 units for each subject.
-      </div>
     </div>
   </div>
 
@@ -350,15 +345,17 @@
 
   const SUBJECTS = [
     '— Select subject —',
-    'Mathematics', 'Science', 'English',
+    'Mathematics', 'Mathematics Extension 1', 'Mathematics Extension 2',
+    'Science', 'Biology', 'Chemistry', 'Physics',
+    'English', 'English Advanced', 'English Standard', 'English ESL',
+    'Visual Arts', 'Music', 'Drama',
     'History', 'Ancient History', 'Modern History',
     'Geography', 'Economics', 'Business Studies', 'Legal Studies',
-    'Language', 'PDHPE',
-    'Dance', 'Art', 'Music', 'Drama',
-    'Software Design & Development', 'Multimedia Technology',
-    'Wood Technology', 'Food Technology', 'Textiles',
-    'Physics', 'Chemistry', 'Biology',
-    'Legal', 'VET Course',
+    'Community and Family Studies', 'Language', 'PDHPE',
+    'Design and Technology', 'Software Engineering',
+    'Industrial Technology Multimedia', 'Industrial Technology Timber',
+     'Food Technology', 'Textiles',
+    'Legal studies', 'VET Course',
   ];
 
   const MIN_SUBJECTS = 5;
@@ -414,11 +411,11 @@
     return 'E';
   }
 
-  function classify(gpa) {
-    if (gpa >= 3.5) return { label: '🏆 Outstanding (A)', color: '#22c55e' };
-    if (gpa >= 2.5) return { label: '⭐ High (B)',         color: '#3b82f6' };
-    if (gpa >= 1.5) return { label: '✅ Sound (C)',        color: '#f59e0b' };
-    if (gpa >= 0.5) return { label: '📘 Basic (D)',        color: '#ef4444' };
+  function classify(percentage) {
+    if (percentage >= 85) return { label: '🏆 Outstanding (A)', color: '#22c55e' };
+    if (percentage >= 70) return { label: '⭐ High (B)',         color: '#3b82f6' };
+    if (percentage >= 55) return { label: '✅ Sound (C)',        color: '#f59e0b' };
+    if (percentage >= 40) return { label: '📘 Basic (D)',        color: '#ef4444' };
     return { label: '⚠️ Limited (E)', color: '#6b7280' };
   }
 
@@ -537,8 +534,10 @@
       const difficulty = difficultyEl.value || 'Medium';
       const difficultyWeight = difficulty === 'Hard' ? 3 : difficulty === 'Easy' ? 1 : 2;
 
-      if (!scoreVal) { scoreEl.classList.add('error'); valid = false; return; }
-      scoreEl.classList.remove('error');
+      if (!scoreVal) {
+        scoreEl.classList.remove('error');
+        return;
+      }
 
       const parsed = parseScore(scoreVal);
       if (!parsed) { scoreEl.classList.add('error'); valid = false; return; }
@@ -547,7 +546,11 @@
       subjects.push({ name, ...parsed, difficulty, difficultyWeight, units: difficultyWeight });
     });
 
-    if (!valid || !subjects.length) return;
+    if (!valid) return;
+    if (subjects.length < MIN_SUBJECTS) {
+      alert(`Please enter at least ${MIN_SUBJECTS} completed subjects to calculate your difficulty-weighted average.`);
+      return;
+    }
 
     // Calculate difficulty-weighted average
     let totalPoints = 0, totalWeights = 0;
@@ -563,19 +566,20 @@
       avgPct = wSum / wWeight;
     }
 
-    const cls = classify(gpa);
+    const cls = classify(avgPct !== null ? avgPct : (gpa / 4.0) * 100);
 
     // Update dial
+    const displayPct = avgPct !== null ? avgPct : (gpa / 4.0) * 100;
     document.getElementById('dialEmpty').style.display = 'none';
     document.getElementById('dialResult').style.display = 'block';
-    document.getElementById('dialGpa').textContent = gpa.toFixed(2);
+    document.getElementById('dialGpa').textContent = displayPct.toFixed(1) + '%';
     document.getElementById('dialClass').style.color = cls.color;
     document.getElementById('dialClass').textContent = cls.label;
     document.getElementById('dialSub').textContent = `${subjects.length} subject${subjects.length > 1 ? 's' : ''} · difficulty weight ${totalWeights}`;
 
     // Animate arc: circumference = 2π × 65 ≈ 408.4
     const circ = 408.4;
-    const offset = circ - (gpa / 4.0) * circ;
+    const offset = circ - (displayPct / 100.0) * circ;
     const arc = document.getElementById('dialArc');
     arc.style.stroke = cls.color;
     setTimeout(() => { arc.style.strokeDashoffset = offset; }, 50);
@@ -585,8 +589,8 @@
     const lowest  = subjects.reduce((a, b) => b.points < a.points ? b : a);
     document.getElementById('statsCard').style.display = 'block';
     document.getElementById('statsStrip').innerHTML = `
-      <div class="stat-box"><div class="stat-val">${gpa.toFixed(2)}</div><div class="stat-lbl">Difficulty-weighted average</div></div>
-      <div class="stat-box"><div class="stat-val">${avgPct !== null ? avgPct.toFixed(1)+'%' : '–'}</div><div class="stat-lbl">Difficulty-weighted avg</div></div>
+      <div class="stat-box"><div class="stat-val">${displayPct.toFixed(1)}%</div><div class="stat-lbl">Average result</div></div>
+      <div class="stat-box"><div class="stat-val">${gpa.toFixed(2)}</div><div class="stat-lbl">Difficulty-weighted grade</div></div>
       <div class="stat-box" style="border:1px solid rgba(34,197,94,.25);background:#f0fdf4;"><div class="stat-val" style="color:var(--green);">${highest.grade}</div><div class="stat-lbl">Best: ${highest.name}</div></div>
       <div class="stat-box" style="border:1px solid rgba(239,68,68,.2);background:#fff5f5;"><div class="stat-val" style="color:var(--red);">${lowest.grade}</div><div class="stat-lbl">Lowest: ${lowest.name}</div></div>
     `;
