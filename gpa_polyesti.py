@@ -34,6 +34,7 @@ DEFAULT_DIFFICULTY = "Medium"
 
 
 def normalize_difficulty(value):
+    #Return a valid difficulty string for a normalized difficulty label
     if value is None or pd.isna(value):
         return DEFAULT_DIFFICULTY
     normalized = str(value).strip().title()
@@ -41,6 +42,7 @@ def normalize_difficulty(value):
 
 
 def load_user_rows_from_db(db_path):
+    #Load additional user rows from the GPA SQLite database.
     extra_rows = []
     if not os.path.isfile(db_path):
         return extra_rows
@@ -74,11 +76,13 @@ def load_user_rows_from_db(db_path):
                 )
         conn.close()
     except Exception:
+        # Ignore malformed database entries and continue.
         pass
     return extra_rows
 
 
 def load_user_rows_from_csv(csv_path):
+    #Load additional user rows from the CSV file if the database is not present.
     extra_rows = []
     if not os.path.isfile(csv_path):
         return extra_rows
@@ -115,6 +119,7 @@ def load_user_rows_from_csv(csv_path):
 
 
 def load_data(path):
+    #Load base grade data and enrich it with user-provided records.
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
     if "Grade" not in df.columns:
@@ -135,7 +140,7 @@ def load_data(path):
 
     if extra_rows:
         extra_df = pd.DataFrame(extra_rows)
-        extra_df["Difficulty"]=extra_df["Difficulty"].fillna(DEFAULT_DIFFICULTY).astype(str).str.strip().str.title()
+        extra_df["Difficulty"] = extra_df["Difficulty"].fillna(DEFAULT_DIFFICULTY).astype(str).str.strip().str.title()
         extra_df.loc[~extra_df["Difficulty"].isin(DIFFICULTY_TO_VALUE), "Difficulty"] = DEFAULT_DIFFICULTY
         extra_df["DifficultyVal"] = extra_df["Difficulty"].map(DIFFICULTY_TO_VALUE)
         df = pd.concat([df, extra_df], ignore_index=True)
@@ -144,6 +149,7 @@ def load_data(path):
 
 
 def weighted_average(grades, weights):
+    #Compute a weighted average using numeric weights.
     grades = np.asarray(grades, dtype=float)
     weights = np.asarray(weights, dtype=float)
     total_weight = np.sum(weights)
@@ -154,8 +160,10 @@ def weighted_average(grades, weights):
 
 
 def main():
+    #Main entry point: compute weighted average, train estimator, and generate a plot.
     df = load_data(csv_path)
-    # Use difficulty values as weights instead of units
+    
+    # Use difficulty values as weights instead of unit values.
     avg, total_weighted, total_weight = weighted_average(df["Grade"].values, df["DifficultyVal"].values)
 
     print("=" * 60)
@@ -170,7 +178,7 @@ def main():
     print("=" * 60)
 
     # --- Polynomial estimator (scikit-learn) ---
-    # Predict DifficultyVal (numeric) from Grade. Optionally include Unit as a second feature when available.
+    # Predict difficulty from score, optionally using unit data as an additional feature.
     use_units = 'Unit' in df.columns
     if use_units:
         X = np.column_stack([df['Grade'].values, df['Unit'].values])
@@ -178,7 +186,7 @@ def main():
         X = df['Grade'].values.reshape(-1, 1)
     y = df['DifficultyVal'].values
 
-    # Train/test split
+    # Split data into training and test sets.
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Polynomial features degree 2

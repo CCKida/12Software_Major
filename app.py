@@ -13,6 +13,7 @@ import io
 import base64
 import matplotlib
 
+# Use the non-interactive Agg backend for server-side plot generation.
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
@@ -37,6 +38,7 @@ average_grade = 0.0
 
 
 def normalize_difficulty(value):
+    #Normalize difficulty labels and return a valid difficulty string.
     if value is None or pd.isna(value):
         return DEFAULT_DIFFICULTY
     normalized = str(value).strip().title()
@@ -44,16 +46,19 @@ def normalize_difficulty(value):
 
 
 def difficulty_value(value):
+    #Convert a difficulty label into its numeric weight value.
     return DIFFICULTY_TO_VALUE.get(normalize_difficulty(value), DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY])
 
 
 def get_db_connection(db_path):
+    #Open a SQLite connection with row access by column name.
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_gpa_database():
+    #Initialize the GPA database and migrate any existing CSV records.
     conn = get_db_connection(gpa_db_path)
     cursor = conn.cursor()
     cursor.execute(
@@ -74,6 +79,7 @@ def init_gpa_database():
 
 
 def migrate_user_csv_to_db(conn):
+    #Copy records from user_gpa_data.csv into the GPA SQLite database.
     if not os.path.isfile(user_data_path):
         return
     cursor = conn.cursor()
@@ -93,10 +99,12 @@ def migrate_user_csv_to_db(conn):
                 )
         conn.commit()
     except Exception:
+        # Ignore CSV migration issues and continue with an empty database.
         pass
 
 
 def init_reflection_database():
+    #Ensure reflection SQLite tables exist for predictions and training data.
     conn = get_db_connection(reflect_db_path)
     cursor = conn.cursor()
     cursor.execute(
@@ -124,6 +132,7 @@ def init_reflection_database():
 
 
 def load_training_data():
+    #Load the training dataset from CSV and optionally from user GPA records.
     data = pd.read_csv(data_path)
     if "Grade" not in data.columns or "Unit" not in data.columns:
         raise ValueError("data.csv must contain 'Grade' and 'Unit' columns")
@@ -182,6 +191,7 @@ def load_training_data():
                     )
             conn.close()
         except Exception:
+            # Ignore invalid user database rows and continue with base CSV data.
             pass
     elif os.path.isfile(user_data_path):
         try:
@@ -236,6 +246,7 @@ def load_training_data():
 
 
 def retrain_model():
+    #Build and fit the polynomial regression model from the current training data.
     global data, X, y, poly, model, average_grade
     data = load_training_data()
     average_grade = data["Grade"].mean()
@@ -253,6 +264,7 @@ retrain_model()
 
 
 def fig_to_png_bytes(fig):
+    #Convert a Matplotlib figure to PNG bytes for HTTP responses.
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight")
     plt.close(fig)
@@ -262,11 +274,13 @@ def fig_to_png_bytes(fig):
 
 @app.route("/admin")
 def admin():
+    # Serve the admin HTML page from the project root.
     return send_from_directory(".", "admin.html")
 
 
 @app.route("/admin/plot/<chart_name>")
 def admin_plot(chart_name):
+    #Render admin chart images for selected training diagnostics.
     if chart_name == "score-vs-gpa":
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.scatter(X[:, 0], y, color="#2d5be3", edgecolor="k", s=75, alpha=0.9)
@@ -336,6 +350,7 @@ def reflect():
 
 @app.route("/predict")
 def predict():
+    #Predict unit requirements for a given grade and difficulty.
     grade = request.args.get("grade", type=float)
     if grade is None:
         return "Please provide a grade parameter, e.g. /predict?grade=85"
@@ -353,6 +368,7 @@ def predict():
 
 @app.route("/log_gpa", methods=["POST"])
 def log_gpa():
+    #Persist GPA log entries to the database and retrain the model.
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -378,6 +394,7 @@ def log_gpa():
 
 @app.route("/reflect_predictions.csv")
 def reflect_predictions_csv():
+    #Serve reflection prediction CSV output from the database
     if os.path.isfile(reflect_db_path):
         conn = get_db_connection(reflect_db_path)
         cursor = conn.cursor()

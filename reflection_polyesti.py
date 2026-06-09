@@ -15,6 +15,7 @@ GRADE_TO_PCT = {"A": 92, "B": 78, "C": 62, "D": 47, "E": 25}
 
 
 def save_reflection_db(df, db_path):
+    #Write training and prediction data into the reflection SQLite database.
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(
@@ -55,6 +56,7 @@ def save_reflection_db(df, db_path):
 
 
 def load_scores_from_data(csv_path):
+    #Load score values from the primary data CSV file.
     df = pd.read_csv(csv_path)
     df.columns = df.columns.str.strip()
     if "Grade" in df.columns:
@@ -67,6 +69,7 @@ def load_scores_from_data(csv_path):
 
 
 def load_from_user_gpa(user_csv_path):
+    #Read user GPA score entries from the user_gpa_data.csv file.
     rows = []
     if not os.path.isfile(user_csv_path):
         return rows
@@ -97,6 +100,7 @@ def load_from_user_gpa(user_csv_path):
 
 
 def build_dataset(base_dir):
+    #Build the dataset used for polynomial regression training.
     data_csv = os.path.join(base_dir, "data.csv")
     user_csv = os.path.join(base_dir, "user_gpa_data.csv")
     scores = []
@@ -111,13 +115,13 @@ def build_dataset(base_dir):
             [np.asarray(scores, dtype=float), np.asarray(user_scores, dtype=float)]
         )
     scores = np.asarray(scores, dtype=float)
-    # If no scores found, create a small synthetic dataset
+
+    # If no scores found, construct a default dataset to allow training.
     if scores.size == 0:
         scores = np.array([55, 65, 72, 80, 88, 92, 45, 30, 100])
 
-    # Default max marks: assume 100 for all entries
+    # Default max marks are assumed to be 100 for each score.
     max_marks = np.full_like(scores, 100.0)
-
     pct_needed = np.clip((max_marks - scores) / max_marks * 100.0, 0.0, 100.0)
 
     df = pd.DataFrame(
@@ -127,8 +131,7 @@ def build_dataset(base_dir):
 
 
 def poly_features_two_vars(x1, x2, degree=2):
-    # Create polynomial features for two variables up to given degree
-    # Order: 1, x1, x2, x1^2, x1*x2, x2^2 (for degree=2)
+    """Construct polynomial features for two variables up to degree 2."""
     if degree != 2:
         raise NotImplementedError("Only degree=2 implemented")
     x1 = np.asarray(x1).reshape(-1)
@@ -147,6 +150,7 @@ def poly_features_two_vars(x1, x2, degree=2):
 
 
 def train_poly_regression(df):
+    #Fit a polynomial regression model to the training dataset.
     X = poly_features_two_vars(df["score"].values, df["max_mark"].values, degree=2)
     y = df["pct_needed"].values
     coeffs, *_ = np.linalg.lstsq(X, y, rcond=None)
@@ -154,6 +158,7 @@ def train_poly_regression(df):
 
 
 def predict_from_coeffs(df, coeffs):
+    #Generate predictions from polynomial coefficients for a given dataset.
     X = poly_features_two_vars(df["score"].values, df["max_mark"].values, degree=2)
     preds = X.dot(coeffs)
     preds = np.clip(preds, 0.0, 100.0)
@@ -161,6 +166,7 @@ def predict_from_coeffs(df, coeffs):
 
 
 def plot_polynomial_predictions(df, coeffs, out_dir):
+    #Plot the regression result and save the output chart.
     x_line = np.linspace(df["score"].min(), df["score"].max(), 300)
     max_marks = np.full_like(x_line, 100.0)
     X_line = poly_features_two_vars(x_line, max_marks, degree=2)
@@ -193,6 +199,7 @@ def plot_polynomial_predictions(df, coeffs, out_dir):
 
 
 def main():
+    #Entry point for dataset creation, model training, prediction, and persistence.
     base_dir = os.path.dirname(os.path.abspath(__file__))
     df = build_dataset(base_dir)
     out_path = os.path.join(base_dir, "reflect_training.csv")
