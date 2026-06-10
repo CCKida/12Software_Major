@@ -1,27 +1,25 @@
+import csv
+import datetime
+import io
+import json
+import os
+import sqlite3
+
+import matplotlib
+# Use the non-interactive Agg backend for server-side plot generation.
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from flask import (
     Flask,
-    render_template_string,
     request,
     jsonify,
     send_from_directory,
     Response,
 )
-import os
-import json
-import datetime
-import io
-import base64
-import matplotlib
-
-# Use the non-interactive Agg backend for server-side plot generation.
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 import pandas as pd
-import csv
-import sqlite3
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
@@ -42,12 +40,17 @@ def normalize_difficulty(value):
     if value is None or pd.isna(value):
         return DEFAULT_DIFFICULTY
     normalized = str(value).strip().title()
-    return normalized if normalized in DIFFICULTY_TO_VALUE else DEFAULT_DIFFICULTY
+    if normalized in DIFFICULTY_TO_VALUE:
+        return normalized
+    return DEFAULT_DIFFICULTY
 
 
 def difficulty_value(value):
     #Convert a difficulty label into its numeric weight value.
-    return DIFFICULTY_TO_VALUE.get(normalize_difficulty(value), DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY])
+    return DIFFICULTY_TO_VALUE.get(
+        normalize_difficulty(value),
+        DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY],
+    )
 
 
 def get_db_connection(db_path):
@@ -90,11 +93,20 @@ def migrate_user_csv_to_db(conn):
                 subjects = row.get("subjects")
                 if not subjects:
                     continue
-                timestamp = row.get("timestamp") or datetime.datetime.now().isoformat()
+                timestamp = (
+                    row.get("timestamp")
+                    or datetime.datetime.now().isoformat()
+                )
                 gpa = float(row["gpa"]) if row.get("gpa") else None
-                num_subjects = int(row["num_subjects"]) if row.get("num_subjects") else None
+                num_subjects = (
+                    int(row["num_subjects"])
+                    if row.get("num_subjects")
+                    else None
+                )
                 cursor.execute(
-                    "INSERT INTO gpa_entries (timestamp, gpa, num_subjects, subjects) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO gpa_entries "
+                    "(timestamp, gpa, num_subjects, subjects) "
+                    "VALUES (?, ?, ?, ?)",
                     (timestamp, gpa, num_subjects, subjects),
                 )
         conn.commit()
@@ -146,7 +158,8 @@ def load_training_data():
             .str.strip()
             .str.title()
         )
-        data.loc[~data["Difficulty"].isin(DIFFICULTY_TO_VALUE), "Difficulty"] = DEFAULT_DIFFICULTY
+        invalid_difficulty = ~data["Difficulty"].isin(DIFFICULTY_TO_VALUE)
+        data.loc[invalid_difficulty, "Difficulty"] = DEFAULT_DIFFICULTY
 
     data = data[["Grade", "Unit", "Difficulty"]].copy()
     data["DifficultyValue"] = data["Difficulty"].map(DIFFICULTY_TO_VALUE)
@@ -191,7 +204,7 @@ def load_training_data():
                     )
             conn.close()
         except Exception:
-            # Ignore invalid user database rows and continue with base CSV data.
+            # Ignore invalid user rows and continue with base CSV data.
             pass
     elif os.path.isfile(user_data_path):
         try:
@@ -236,9 +249,14 @@ def load_training_data():
         data = pd.concat([data, user_data], ignore_index=True)
 
     data["Difficulty"] = (
-        data["Difficulty"].fillna(DEFAULT_DIFFICULTY).astype(str).str.strip().str.title()
+        data["Difficulty"]
+        .fillna(DEFAULT_DIFFICULTY)
+        .astype(str)
+        .str.strip()
+        .str.title()
     )
-    data.loc[~data["Difficulty"].isin(DIFFICULTY_TO_VALUE), "Difficulty"] = DEFAULT_DIFFICULTY
+    invalid_difficulty = ~data["Difficulty"].isin(DIFFICULTY_TO_VALUE)
+    data.loc[invalid_difficulty, "Difficulty"] = DEFAULT_DIFFICULTY
     data["DifficultyValue"] = data["Difficulty"].map(DIFFICULTY_TO_VALUE)
     data["GradeAboveAverage"] = data["Grade"] - data["Grade"].mean()
 
@@ -246,7 +264,7 @@ def load_training_data():
 
 
 def retrain_model():
-    #Build and fit the polynomial regression model from the current training data.
+    # Build and fit the polynomial regression model.
     global data, X, y, poly, model, average_grade
     data = load_training_data()
     average_grade = data["Grade"].mean()
@@ -292,9 +310,14 @@ def admin_plot(chart_name):
         ax.set_ylim(min(y.min() - 0.5, 0), y.max() + 0.5)
     elif chart_name == "polynomial-fit":
         x_line = np.linspace(X[:, 0].min(), X[:, 0].max(), 200).reshape(-1, 1)
-        difficulty_line = np.full((x_line.shape[0], 1), DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY])
+        difficulty_line = np.full(
+            (x_line.shape[0], 1),
+            DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY],
+        )
         grade_above_avg_line = x_line - average_grade
-        x_line_features = np.hstack([x_line, difficulty_line, grade_above_avg_line])
+        x_line_features = np.hstack(
+            [x_line, difficulty_line, grade_above_avg_line]
+        )
         y_line = model.predict(poly.transform(x_line_features))
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.scatter(
@@ -354,7 +377,9 @@ def predict():
     grade = request.args.get("grade", type=float)
     if grade is None:
         return "Please provide a grade parameter, e.g. /predict?grade=85"
-    difficulty = request.args.get("difficulty", default=DEFAULT_DIFFICULTY, type=str)
+    difficulty = request.args.get(
+        "difficulty", default=DEFAULT_DIFFICULTY, type=str
+    )
     difficulty_val = difficulty_value(difficulty)
     grade_above_average = grade - average_grade
     prediction_features = [[grade, difficulty_val, grade_above_average]]
@@ -382,7 +407,9 @@ def log_gpa():
     conn = get_db_connection(gpa_db_path)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO gpa_entries (timestamp, gpa, num_subjects, subjects) VALUES (?, ?, ?, ?)",
+        "INSERT INTO gpa_entries "
+        "(timestamp, gpa, num_subjects, subjects) "
+        "VALUES (?, ?, ?, ?)",
         (timestamp, gpa, len(subjects), subjects_json),
     )
     conn.commit()
@@ -398,7 +425,10 @@ def reflect_predictions_csv():
     if os.path.isfile(reflect_db_path):
         conn = get_db_connection(reflect_db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT score, max_mark, predicted_pct FROM reflect_predictions")
+        cursor.execute(
+            "SELECT score, max_mark, predicted_pct "
+            "FROM reflect_predictions"
+        )
         rows = cursor.fetchall()
         conn.close()
 
