@@ -446,5 +446,8 @@ def reflect_predictions_csv():
 
 # ── Run ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("Scorely backend running → http://localhost:5000")
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in ("1", "true", "yes")
+    print(f"Scorely backend running → http://{host}:{port}")
+    app.run(debug=debug, host=host, port=port)

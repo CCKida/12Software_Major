@@ -75,3 +75,21 @@ http://localhost:5000
 - `/predict` accepts `grade` and optional `difficulty`; difficulty is normalized and mapped to numeric weight values.
 - The admin charts are generated dynamically from the current training data and the polynomial regression model.
 
+## Deployment
+
+Minimal steps to run in production (Linux container / Heroku):
+
+1. Install pinned dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Run with Gunicorn:
+
+```bash
+gunicorn wsgi:application --bind 0.0.0.0:8000
+```
+
+On platforms like Heroku the provided `Procfile` will run Gunicorn automatically and the `PORT` environment variable will be honored.
+
