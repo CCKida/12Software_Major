@@ -1,13 +1,12 @@
 # Scorely
 
-Scorely is a Flask-powered website for tracking student performance, calculating GPA, and reflecting on academic progress. It includes a static frontend, a polynomial regression prediction model, an admin diagnostics dashboard, and SQLite-backed persistence for GPA and reflection data.
+Scorely is a Flask-powered website for tracking student performance, calculating GPA, and reflecting on academic progress. It includes a static frontend, a polynomial regression prediction model, and SQLite-backed persistence for GPA and reflection data.
 
 ## Features
 
 - Static home page with project overview and navigation
 - GPA calculator page for entering subjects, scores, difficulty, and unit values
 - Reflection page for viewing and exporting reflection prediction data
-- Admin dashboard with training data and polynomial regression visualization
 - Predictive endpoint for estimating unit requirements based on grade and difficulty
 - SQLite persistence for GPA entries and reflection records
 - CSV migration support from legacy `user_gpa_data.csv`
@@ -17,9 +16,6 @@ Scorely is a Flask-powered website for tracking student performance, calculating
 - `/` - Home page (`index.html`)
 - `/gpa` - GPA calculator page (`gpa.html`)
 - `/reflect` - Reflection form page (`reflect.html`)
-- `/admin` - Admin dashboard page (`admin.html`)
-- `/admin/plot/score-vs-gpa` - Training data scatter plot
-- `/admin/plot/polynomial-fit` - Polynomial regression fit plot
 - `/predict?grade=<score>&difficulty=<difficulty>` - Predict unit value for a grade
 - `/log_gpa` - POST endpoint to save GPA submissions and retrain the model
 - `/reflect_predictions.csv` - Export reflection prediction CSV
@@ -73,7 +69,6 @@ http://localhost:5000
 - `app.py` initializes SQLite databases automatically if needed and migrates legacy `user_gpa_data.csv` entries into `gpa_data.db`.
 - The GPA model retrains after every `/log_gpa` POST submission.
 - `/predict` accepts `grade` and optional `difficulty`; difficulty is normalized and mapped to numeric weight values.
-- The admin charts are generated dynamically from the current training data and the polynomial regression model.
 
 ## Deployment
 

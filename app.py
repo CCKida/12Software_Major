@@ -290,66 +290,6 @@ def fig_to_png_bytes(fig):
     return buf.getvalue()
 
 
-@app.route("/admin")
-def admin():
-    # Serve the admin HTML page from the project root.
-    return send_from_directory(".", "admin.html")
-
-
-@app.route("/admin/plot/<chart_name>")
-def admin_plot(chart_name):
-    #Render admin chart images for selected training diagnostics.
-    if chart_name == "score-vs-gpa":
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.scatter(X[:, 0], y, color="#2d5be3", edgecolor="k", s=75, alpha=0.9)
-        ax.set_title("Training data: Grade vs Unit")
-        ax.set_xlabel("Grade")
-        ax.set_ylabel("Unit")
-        ax.grid(True, alpha=0.25)
-        ax.set_xlim(X[:, 0].min() - 1, X[:, 0].max() + 1)
-        ax.set_ylim(min(y.min() - 0.5, 0), y.max() + 0.5)
-    elif chart_name == "polynomial-fit":
-        x_line = np.linspace(X[:, 0].min(), X[:, 0].max(), 200).reshape(-1, 1)
-        difficulty_line = np.full(
-            (x_line.shape[0], 1),
-            DIFFICULTY_TO_VALUE[DEFAULT_DIFFICULTY],
-        )
-        grade_above_avg_line = x_line - average_grade
-        x_line_features = np.hstack(
-            [x_line, difficulty_line, grade_above_avg_line]
-        )
-        y_line = model.predict(poly.transform(x_line_features))
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.scatter(
-            X[:, 0],
-            y,
-            color="#2d5be3",
-            edgecolor="k",
-            s=75,
-            alpha=0.9,
-            label="Training data",
-        )
-        ax.plot(
-            x_line.flatten(),
-            y_line,
-            color="#f59e0b",
-            linewidth=3,
-            label="Polynomial fit",
-        )
-        ax.set_title("Polynomial regression fit")
-        ax.set_xlabel("Grade")
-        ax.set_ylabel("Unit")
-        ax.legend()
-        ax.grid(True, alpha=0.25)
-        ax.set_xlim(X.min() - 1, X.max() + 1)
-        ax.set_ylim(min(y.min() - 0.5, 0), y.max() + 0.5)
-    else:
-        return "Chart not found", 404
-
-    png = fig_to_png_bytes(fig)
-    return Response(png, mimetype="image/png")
-
-
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 
