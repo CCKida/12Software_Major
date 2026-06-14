@@ -2,6 +2,8 @@
 
 Scorely is a Flask-powered website for tracking student performance, calculating GPA, and reflecting on academic progress. It includes a static frontend, a polynomial regression prediction model, and SQLite-backed persistence for GPA and reflection data.
 
+Made by students for students. 
+
 ## Features
 
 - Static home page with project overview and navigation
@@ -87,4 +89,3 @@ gunicorn wsgi:application --bind 0.0.0.0:8000
 ```
 
 On platforms like Heroku the provided `Procfile` will run Gunicorn automatically and the `PORT` environment variable will be honored.
-
